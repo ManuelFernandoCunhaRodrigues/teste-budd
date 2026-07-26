@@ -2,7 +2,6 @@ import { useState } from 'react';
 
 import { LoadingState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
 import { useDelayedFlag } from '@/hooks/useDelayedFlag';
 import { loadingDelay } from '@/theme';
 
@@ -15,6 +14,11 @@ import { RoleTabs, type RoleTab } from '../components/RoleTabs';
  *
  * The brand loading animation runs for a fixed beat on entry — it is a
  * deliberate part of the experience in the design, not a data dependency.
+ *
+ * The screen no longer wraps its content in a `ScrollView`: each feed is a
+ * virtualised list that owns the vertical scroll, and the tab switcher travels
+ * into the list header so it still scrolls away with the content (M-01). Keeping
+ * the outer `ScrollView` would have disabled virtualisation entirely.
  */
 export function RoleScreen() {
   const [tab, setTab] = useState<RoleTab>('eventos');
@@ -28,14 +32,11 @@ export function RoleScreen() {
     );
   }
 
+  const tabs = <RoleTabs active={tab} onChange={setTab} />;
+
   return (
-    <Screen
-      contentContainerStyle={{ paddingBottom: TAB_BAR_CONTENT_INSET }}
-      contentClassName="pt-1.5"
-      scroll
-    >
-      <RoleTabs active={tab} onChange={setTab} />
-      {tab === 'bares' ? <BarsFeed /> : <EventsFeed />}
+    <Screen contentClassName="pt-1.5">
+      {tab === 'bares' ? <BarsFeed header={tabs} /> : <EventsFeed header={tabs} />}
     </Screen>
   );
 }
