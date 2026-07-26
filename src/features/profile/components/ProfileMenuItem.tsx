@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 
 import { Touchable } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/ui/icons';
+import { cn } from '@/utils/cn';
 
 export interface ProfileMenuItemProps {
   title: string;
@@ -9,15 +10,35 @@ export interface ProfileMenuItemProps {
   onPress: () => void;
   /** Trailing pill, e.g. the available credit balance. */
   badge?: string;
+  /** Greys the row out and blocks the press — e.g. support with no number configured. */
+  disabled?: boolean;
+  /** Explains why the row is unavailable, for screen readers. */
+  accessibilityHint?: string;
+  /** `link` for rows that leave the app, so assistive tech announces it correctly. */
+  accessibilityRole?: 'button' | 'link';
 }
 
 /** One row of the profile menu. */
-export function ProfileMenuItem({ title, icon, onPress, badge }: ProfileMenuItemProps) {
+export function ProfileMenuItem({
+  title,
+  icon,
+  onPress,
+  badge,
+  disabled = false,
+  accessibilityHint,
+  accessibilityRole = 'button',
+}: ProfileMenuItemProps) {
   return (
     <Touchable
+      accessibilityHint={accessibilityHint}
       accessibilityLabel={badge ? `${title}, ${badge}` : title}
-      accessibilityRole="button"
-      className="min-h-[44px] flex-row items-center gap-4 border-t border-surface-alt px-1 py-4"
+      accessibilityRole={accessibilityRole}
+      accessibilityState={{ disabled }}
+      className={cn(
+        'min-h-[44px] flex-row items-center gap-4 border-t border-surface-alt px-1 py-4',
+        disabled && 'opacity-40',
+      )}
+      disabled={disabled}
       feedback="none"
       onPress={onPress}
     >
@@ -32,7 +53,7 @@ export function ProfileMenuItem({ title, icon, onPress, badge }: ProfileMenuItem
         ) : null}
       </View>
 
-      <ChevronRightIcon />
+      {disabled ? null : <ChevronRightIcon />}
     </Touchable>
   );
 }

@@ -112,7 +112,10 @@ export function ProfileScreen() {
         <View className="mt-5.5">
           {menu.map((entry) => (
             <ProfileMenuItem
+              accessibilityHint={entry.accessibilityHint}
+              accessibilityRole={entry.accessibilityRole}
               badge={entry.badge}
+              disabled={entry.disabled}
               icon={entry.icon}
               key={entry.key}
               onPress={entry.onPress}

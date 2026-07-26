@@ -17,11 +17,14 @@ export const RECHARGE = {
 /** Buddcoin loyalty programme. */
 export const BUDDCOIN_LABEL = 'BDC';
 
-/** Support channel used by the profile menu. */
-export const SUPPORT_WHATSAPP = {
-  phone: '5598999999999',
-  message: 'Olá! Preciso de ajuda com minha conta no Budd.',
-} as const;
+/**
+ * Support contact moved to configuration.
+ *
+ * The number used to be hard-coded here as `5598999999999` — a placeholder that
+ * would have opened a chat with whoever owns it (B-02). It now comes from
+ * `EXPO_PUBLIC_WHATSAPP_SUPPORT_NUMBER` via `config/support`, is validated, and
+ * the menu entry is disabled when unset. Messages live in `WHATSAPP_MESSAGES`.
+ */
 
 /** Default map framing for São Luís / MA, where the mock data lives. */
 export const DEFAULT_REGION = {

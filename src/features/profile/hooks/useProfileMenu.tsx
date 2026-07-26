@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { Linking } from 'react-native';
 
 import {
   BagIcon,
@@ -13,8 +12,12 @@ import {
   StarMenuIcon,
   WhatsAppIcon,
 } from '@/components/ui/icons';
-import { SUPPORT_WHATSAPP } from '@/constants/app';
 import { ROUTES } from '@/constants/routes';
+import {
+  isWhatsAppSupportAvailable,
+  openWhatsAppSupport,
+  WHATSAPP_ERROR_MESSAGES,
+} from '@/services/externalLinks/whatsapp';
 import { showToast } from '@/store/toastStore';
 import { selectBalanceInCents, useWalletStore } from '@/store/walletStore';
 import { formatCents } from '@/utils/money';
@@ -25,6 +28,10 @@ export interface ProfileMenuEntry {
   icon: React.ReactNode;
   onPress: () => void;
   badge?: string;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: 'button' | 'link';
 }
 
 /**
@@ -39,21 +46,15 @@ export function useProfileMenu(onRequestLogout: () => void): ProfileMenuEntry[] 
   // so the badge stays hidden instead of asserting "R$ 0,00".
   const balanceInCents = useWalletStore(selectBalanceInCents);
 
-  const openWhatsApp = async () => {
-    const url = `https://wa.me/${SUPPORT_WHATSAPP.phone}?text=${encodeURIComponent(
-      SUPPORT_WHATSAPP.message,
-    )}`;
+  // Configuration decides whether support exists at all; the row is disabled
+  // rather than hidden, so the absence is visible instead of mysterious.
+  const supportAvailable = isWhatsAppSupportAvailable();
 
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        showToast('Não foi possível abrir o WhatsApp');
-        return;
-      }
-      await Linking.openURL(url);
-    } catch {
-      showToast('Não foi possível abrir o WhatsApp');
-    }
+  const openWhatsApp = async () => {
+    const result = await openWhatsAppSupport('support');
+    if (result.status === 'opened') return;
+
+    showToast(WHATSAPP_ERROR_MESSAGES[result.status]);
   };
 
   return [
@@ -108,8 +109,16 @@ export function useProfileMenu(onRequestLogout: () => void): ProfileMenuEntry[] 
     },
     {
       key: 'support',
-      title: 'Atendimento pelo WhatsApp',
+      title: supportAvailable ? 'Atendimento pelo WhatsApp' : 'Atendimento indisponível',
       icon: <WhatsAppIcon />,
+      disabled: !supportAvailable,
+      accessibilityRole: supportAvailable ? 'link' : 'button',
+      accessibilityLabel: supportAvailable
+        ? 'Abrir atendimento no WhatsApp'
+        : 'Atendimento indisponível',
+      accessibilityHint: supportAvailable
+        ? undefined
+        : 'O número de atendimento não está configurado.',
       onPress: openWhatsApp,
     },
     {
