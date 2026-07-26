@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { normalizeError } from '@/services/errors';
 import type { ApiError, RequestStatus } from '@/types/api';
 
 export interface AsyncData<T> {
@@ -58,9 +59,14 @@ export function useAsyncData<T>(loader: () => Promise<T>, key: string): AsyncDat
         setData(result);
         setStatus('success');
       })
-      .catch((caught: ApiError) => {
+      .catch((caught: unknown) => {
         if (cancelled) return;
-        setError(caught);
+        const normalized = normalizeError(caught);
+        setError({
+          status: normalized.status ?? 0,
+          code: normalized.code,
+          message: normalized.userMessage,
+        });
         setStatus('error');
       });
 

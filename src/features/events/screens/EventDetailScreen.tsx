@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,7 +12,8 @@ import {
   filterMenuSections,
 } from '@/domain/catalog/menuFilters';
 import { CatalogVenueProvider, CategoryChips, FeaturedGrid, MenuSectionList } from '@/features/catalog';
-import { BARS } from '@/mocks/bars';
+import { fetchHostBarForEvent } from '@/features/bars/services/barService';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { availabilityMessage } from '@/services/tickets/ticketService';
 import { colors } from '@/theme';
 
@@ -37,15 +38,13 @@ export function EventDetailScreen({ eventId }: EventDetailScreenProps) {
   /**
    * The venue whose menu may be shown alongside the event.
    *
-   * Resolved by attribution, and only when it is unambiguous. This used to be
-   * hard-coded to `BARS[0]`, so every event page sold one particular bar's
-   * products — items would enter the cart credited to a venue that has nothing
-   * to do with the event. When the host cannot be determined, no menu is shown.
+   * Resolved through the venue service, and only when it is unambiguous. This
+   * keeps real event payloads from being mixed with local seed bars.
    */
-  const hostVenue = useMemo(() => {
-    const hosts = BARS.filter((bar) => bar.eventIds.includes(eventId));
-    return hosts.length === 1 ? hosts[0] : null;
-  }, [eventId]);
+  const { data: hostVenue } = useAsyncData(
+    () => fetchHostBarForEvent(eventId),
+    `event-host:${eventId}`,
+  );
 
   if (status === 'loading' || status === 'idle') {
     return <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />;

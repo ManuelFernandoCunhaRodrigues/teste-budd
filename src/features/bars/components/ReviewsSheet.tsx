@@ -2,6 +2,7 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Avatar, Button, Divider } from '@/components/ui';
 import type { ReviewPublicationStatus } from '@/domain/reviews/reviewTypes';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 import { REVIEWS } from '@/mocks/reviews';
 import { normalizeError } from '@/services/errors';
 import { useSessionStore } from '@/store/sessionStore';
@@ -23,6 +24,7 @@ export interface ReviewsSheetProps {
 
 /** Bottom sheet listing a venue's reviews and letting the user add one. */
 export function ReviewsSheet({ bar, visible, onClose }: ReviewsSheetProps) {
+  const titleRef = useModalAccessibility(visible, `Avaliações de ${bar.name}`);
   const user = useSessionStore((state) => state.user);
   const draftUserId = user?.id ?? 'anonymous';
   const draftAuthorName = user?.name ?? 'Voce';
@@ -60,7 +62,10 @@ export function ReviewsSheet({ bar, visible, onClose }: ReviewsSheetProps) {
       >
         {/* Stops taps inside the sheet from reaching the scrim. */}
         <Pressable
+          accessibilityViewIsModal
+          aria-modal
           className="max-h-[82%] rounded-t-3xl bg-surface-sheet px-5 pb-6 pt-2"
+          importantForAccessibility="yes"
           onPress={(event) => event.stopPropagation()}
         >
           <View className="mx-auto mb-4 mt-2 h-1 w-10 rounded-sm bg-[#333]" />
@@ -71,7 +76,14 @@ export function ReviewsSheet({ bar, visible, onClose }: ReviewsSheetProps) {
                 {bar.rating}
               </Text>
               <View>
-                <Text className="text-2xl text-primary">★★★★★</Text>
+                <Text
+                  accessibilityLabel={`Avaliações de ${bar.name}`}
+                  accessibilityRole="header"
+                  className="text-2xl text-primary"
+                  ref={titleRef}
+                >
+                  ★★★★★
+                </Text>
                 <Text className="mt-1 text-base text-text-muted">
                   {bar.reviewsCount} avaliacoes • Super
                 </Text>

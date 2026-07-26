@@ -2,6 +2,7 @@ import { Modal, ScrollView, Text, View } from 'react-native';
 
 import { Button, Chip, Stepper } from '@/components/ui';
 import type { TicketTier } from '@/domain/tickets/ticketTypes';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 import { availabilityMessage } from '@/services/tickets/ticketService';
 import { formatCents, multiplyCents } from '@/utils/money';
 
@@ -23,6 +24,7 @@ export interface TicketSheetProps {
  */
 export function TicketSheet({ visible, onClose, controller, eventName }: TicketSheetProps) {
   const { availability, selectedTier, quantity, reservation, error, stage } = controller;
+  const titleRef = useModalAccessibility(visible, `Ingressos. ${eventName}`);
 
   const unavailableReason = availability ? availabilityMessage(availability) : null;
   const tiers = availability?.kind === 'available' ? availability.tiers : [];
@@ -30,9 +32,18 @@ export function TicketSheet({ visible, onClose, controller, eventName }: TicketS
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View className="flex-1 justify-end bg-black/60">
-        <View className="max-h-[85%] rounded-t-2xl border-t border-border bg-surface px-5 pb-8 pt-5">
+        <View
+          accessibilityViewIsModal
+          aria-modal
+          className="max-h-[85%] rounded-t-2xl border-t border-border bg-surface px-5 pb-8 pt-5"
+          importantForAccessibility="yes"
+        >
           <View className="flex-row items-start justify-between gap-3">
-            <Text accessibilityRole="header" className="flex-1 text-2xl font-extrabold text-text">
+            <Text
+              accessibilityRole="header"
+              className="flex-1 text-2xl font-extrabold text-text"
+              ref={titleRef}
+            >
               Ingressos
             </Text>
             <Button label="Fechar" onPress={onClose} size="sm" variant="ghost" />

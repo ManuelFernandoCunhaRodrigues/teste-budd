@@ -11,7 +11,8 @@ import {
   filterMenuSections,
 } from '@/domain/catalog/menuFilters';
 import { CatalogVenueProvider, CategoryChips, FeaturedGrid, MenuSectionList } from '@/features/catalog';
-import { EVENTS } from '@/mocks/events';
+import { fetchEventsByIds } from '@/features/events/services/eventService';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { selectCartCount, selectCartSubtotalInCents, useCartStore } from '@/store/cartStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import type { Event } from '@/types/domain';
@@ -32,6 +33,11 @@ export interface BarDetailScreenProps {
 export function BarDetailScreen({ barId }: BarDetailScreenProps) {
   const router = useRouter();
   const { data: bar, status, error, reload } = useBar(barId);
+  const eventIdsKey = bar?.eventIds.join(',') ?? '';
+  const { data: venueEvents, status: venueEventsStatus } = useAsyncData<Event[]>(
+    () => (bar ? fetchEventsByIds(bar.eventIds) : Promise.resolve([])),
+    `bar-events:${bar?.id ?? 'pending'}:${eventIdsKey}`,
+  );
 
   const [categoryId, setCategoryId] = useState<string>(FEATURED_CATEGORY_ID);
   const [reviewsVisible, setReviewsVisible] = useState(false);
@@ -41,11 +47,6 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
 
   const cartCount = useCartStore(selectCartCount);
   const cartSubtotalInCents = useCartStore(selectCartSubtotalInCents);
-
-  const venueEvents = useMemo(
-    () => (bar ? EVENTS.filter((event) => bar.eventIds.includes(event.id)) : []),
-    [bar],
-  );
 
   const categories = useMemo(() => (bar ? buildMenuCategories(bar.sections) : []), [bar]);
 
@@ -98,7 +99,13 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
           >
             Eventos no local
           </Text>
-          <VenueEventsCarousel events={venueEvents} onSelect={openEvent} />
+          {venueEventsStatus === 'error' ? (
+            <Text className="px-4 text-sm text-text-muted">
+              Eventos do local indisponiveis no momento.
+            </Text>
+          ) : (
+            <VenueEventsCarousel events={venueEvents ?? []} onSelect={openEvent} />
+          )}
         </View>
 
         <View className="pt-3.5">

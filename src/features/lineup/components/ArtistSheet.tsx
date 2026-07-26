@@ -2,6 +2,7 @@ import { Modal, ScrollView, Text, useWindowDimensions, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, GradientImage } from '@/components/ui';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 import type { Artist } from '@/types/domain';
 
 export interface ArtistSheetProps {
@@ -15,12 +16,19 @@ export function ArtistSheet({ artist, onClose }: ArtistSheetProps) {
   const insets = useSafeAreaInsets();
   const maxSheetHeight = Math.max(360, height - insets.top - 24);
   const artworkMaxHeight = Math.min(270, height * 0.32);
+  const titleRef = useModalAccessibility(
+    artist !== null,
+    artist ? `Artista ${artist.name}` : 'Artista',
+  );
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={artist !== null}>
       <View className="flex-1 justify-end bg-black/55">
         <View
+          accessibilityViewIsModal
+          aria-modal
           className="rounded-t-3xl bg-surface-sheet px-5 pt-5.5"
+          importantForAccessibility="yes"
           style={{ maxHeight: maxSheetHeight }}
         >
           <ScrollView
@@ -41,6 +49,7 @@ export function ArtistSheet({ artist, onClose }: ArtistSheetProps) {
                     accessibilityRole="header"
                     className="text-center text-7xl font-extrabold text-text"
                     numberOfLines={3}
+                    ref={titleRef}
                   >
                     {artist.name}
                   </Text>

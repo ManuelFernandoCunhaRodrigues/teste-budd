@@ -1,5 +1,6 @@
 import { Modal, Text, View } from 'react-native';
 
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 import { cn } from '@/utils/cn';
 
 import { Button } from '../ui/Button';
@@ -39,6 +40,8 @@ export function ConfirmDialog({
   loading = false,
   errorMessage = null,
 }: ConfirmDialogProps) {
+  const titleRef = useModalAccessibility(visible, title);
+
   return (
     <Modal
       animationType="fade"
@@ -50,13 +53,17 @@ export function ConfirmDialog({
     >
       <View className="flex-1 items-center justify-center bg-black/60 px-6">
         <View
+          accessibilityViewIsModal
+          aria-modal
           className={cn(
             'w-full rounded-2xl border bg-surface p-6',
             destructive ? 'border-danger-border' : 'border-border',
           )}
+          importantForAccessibility="yes"
         >
           <Text
             accessibilityRole="header"
+            ref={titleRef}
             className={cn(
               'text-center text-2xl font-extrabold',
               destructive ? 'text-danger' : 'text-text',
