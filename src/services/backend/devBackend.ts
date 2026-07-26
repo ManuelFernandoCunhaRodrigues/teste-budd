@@ -493,6 +493,15 @@ export const devBackend: BackendPort = {
     return order;
   },
 
+  async fetchOrders(): Promise<Order[]> {
+    await latency();
+
+    // Newest first, matching how the history screen reads.
+    return [...db.orders.values()].sort(
+      (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+    );
+  },
+
   async fetchOrder(orderId: string): Promise<Order> {
     await latency();
     const order = db.orders.get(orderId);

@@ -57,6 +57,12 @@ export const unavailableBackend: BackendPort = {
       unavailableError('createOrder', 'Não é possível fechar o pedido: servidor indisponível.'),
     ),
   fetchOrder: () => Promise.reject(unavailableError('fetchOrder')),
+  // Rejects rather than resolving to `[]`: an empty list would read as "you have
+  // no orders", which is a claim about the user's history we cannot make.
+  fetchOrders: () =>
+    Promise.reject(
+      unavailableError('fetchOrders', 'Não foi possível carregar seu histórico agora.'),
+    ),
 
   startPayment: () => Promise.reject(unavailableError('startPayment')),
   fetchPayment: () => Promise.reject(unavailableError('fetchPayment')),

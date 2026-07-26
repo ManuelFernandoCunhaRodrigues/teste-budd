@@ -68,6 +68,11 @@ export function fetchOrder(orderId: string): Promise<Order> {
   return backend.fetchOrder(orderId);
 }
 
+/** The user's order history, newest first. */
+export function fetchOrders(): Promise<Order[]> {
+  return backend.fetchOrders();
+}
+
 export function fetchPayment(paymentId: string): Promise<Payment> {
   return backend.fetchPayment(paymentId);
 }

@@ -42,6 +42,13 @@ export interface BackendPort {
   // --- Orders -------------------------------------------------------------
   createOrder(input: CreateOrderInput): Promise<Order>;
   fetchOrder(orderId: string): Promise<Order>;
+  /**
+   * The signed-in user's orders, newest first.
+   *
+   * Added for the history screen, which previously had no source at all and so
+   * showed an empty month whatever the user selected (M-04).
+   */
+  fetchOrders(): Promise<Order[]>;
 
   // --- Payments -----------------------------------------------------------
   startPayment(input: StartPaymentInput): Promise<Payment>;

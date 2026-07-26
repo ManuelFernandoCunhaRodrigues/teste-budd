@@ -103,6 +103,10 @@ export const httpBackend: BackendPort = {
     return guard('fetchOrder', () => api.get<Order>(ENDPOINTS.order(orderId)));
   },
 
+  fetchOrders() {
+    return guard('fetchOrders', () => api.get<Order[]>(ENDPOINTS.orders));
+  },
+
   startPayment(input: StartPaymentInput) {
     return guard('startPayment', () =>
       api.post<Payment>(
