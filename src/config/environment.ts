@@ -1,52 +1,126 @@
+import { validatePhoneNumber } from './support';
+import type {
+  AppEnvironment,
+  BackendMode,
+  EnvironmentConfig,
+  EnvironmentValidationResult,
+} from './environment.types';
+import {
+  blockingIssues,
+  normaliseBaseUrl,
+  parseApiBaseUrl,
+  validateEnvironmentConfig,
+} from './environment.validation';
+
 /**
  * Central access point for environment configuration.
  *
  * Only `EXPO_PUBLIC_*` variables are readable at runtime, and everything read
  * here is inlined into the JS bundle — never put a secret in this file or in
  * `.env`. Anything privileged belongs behind the API.
+ *
+ * Two things changed with B-01. There is no longer a fallback API host: a missing
+ * URL stays `null` and is reported, because substituting a placeholder made a
+ * misconfigured build indistinguishable from a working one. And the target
+ * environment is explicit rather than inferred from `__DEV__`, so a staging build
+ * is not treated as production.
  */
 
-const DEFAULT_API_URL = 'https://api.budd.app';
+const DEFAULT_TIMEOUT_MS = 15_000;
 
-const rawApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+function readEnvironmentName(): AppEnvironment {
+  const raw = process.env.EXPO_PUBLIC_APP_ENV?.trim().toLowerCase();
 
-export const environment = {
-  apiUrl: rawApiUrl || DEFAULT_API_URL,
-  /** Request timeout in ms. */
-  apiTimeout: Number(process.env.EXPO_PUBLIC_API_TIMEOUT ?? 15000),
-  isDev: __DEV__,
+  if (raw === 'production' || raw === 'staging' || raw === 'development') return raw;
 
-  /**
-   * Whether a real API base URL was configured explicitly.
-   *
-   * `DEFAULT_API_URL` is a placeholder host, so falling back to it does not
-   * mean a backend exists. Critical flows check this before attempting a call:
-   * reporting "unavailable" is honest, whereas firing a request at a host that
-   * was never provisioned would surface as a confusing network error.
-   */
-  hasConfiguredApi: Boolean(rawApiUrl),
+  // Unset: a dev bundle is development, anything else is treated as production —
+  // failing towards the strictest rules rather than the loosest.
+  return __DEV__ ? 'development' : 'production';
+}
 
-  /**
-   * Opt-in in-memory backend used to exercise the real flows while no server
-   * exists. Guarded by `__DEV__` as well as the flag, so it can never be
-   * reached from a production build even if the variable is set at build time.
-   */
-  useDevBackend: __DEV__ && process.env.EXPO_PUBLIC_ENABLE_DEV_BACKEND === 'true',
-} as const;
+function readTimeout(): number {
+  const raw = process.env.EXPO_PUBLIC_API_TIMEOUT?.trim();
+  if (!raw) return DEFAULT_TIMEOUT_MS;
+
+  const parsed = Number(raw);
+  // Non-numeric input is surfaced as an issue by the validator rather than
+  // silently reverting to the default.
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+const rawApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || null;
+const environmentName = readEnvironmentName();
+
+/** Mocks are additionally gated by `__DEV__`, so a production bundle cannot reach them. */
+const mocksRequested = process.env.EXPO_PUBLIC_ENABLE_DEV_BACKEND === 'true';
+
+const { url: parsedApiUrl } = parseApiBaseUrl(rawApiUrl, environmentName);
+const phone = validatePhoneNumber(process.env.EXPO_PUBLIC_WHATSAPP_SUPPORT_NUMBER);
+
+export const environment: EnvironmentConfig = Object.freeze({
+  environment: environmentName,
+  // Only a URL that passed validation is exposed; anything else is `null`, so no
+  // caller can accidentally request against a rejected value.
+  apiBaseUrl: parsedApiUrl ? normaliseBaseUrl(parsedApiUrl.toString()) : null,
+  apiTimeoutMs: readTimeout(),
+  enableMocks: __DEV__ && mocksRequested,
+  whatsappSupportNumber: phone.valid ? phone.number : null,
+});
+
+/** Convenience flags derived from the frozen config. */
+export const isProduction = environment.environment === 'production';
+export const isDevelopment = environment.environment === 'development';
 
 /**
- * Fails fast at startup when a required variable is missing, instead of
- * surfacing as a confusing network error later. Called from the root layout.
+ * Validates the resolved configuration.
+ *
+ * Returns a result instead of throwing so the bootstrap can render an error
+ * screen. Throwing at module scope produced a blank crash with no way to retry.
  */
-export function assertEnvironment(): void {
-  if (!environment.apiUrl) {
-    throw new Error('EXPO_PUBLIC_API_URL is not set and no default is available.');
+export function validateEnvironment(): EnvironmentValidationResult {
+  const result = validateEnvironmentConfig(environment, rawApiUrl);
+
+  // Reported separately: the number is optional, so a bad one degrades the
+  // support entry point rather than blocking startup.
+  if (!phone.valid && phone.reason !== 'empty') {
+    return {
+      isValid: result.isValid,
+      issues: [
+        ...result.issues,
+        {
+          code: 'whatsapp_number_invalid',
+          severity: 'warning',
+          message:
+            'EXPO_PUBLIC_WHATSAPP_SUPPORT_NUMBER é inválida ou é um placeholder conhecido. ' +
+            'O atendimento pelo WhatsApp fica desabilitado.',
+        },
+      ],
+    };
   }
+
+  return result;
 }
 
-/** Which implementation backs the critical flows right now. */
-export function resolveBackendMode(): 'http' | 'dev' | 'unavailable' {
-  if (environment.useDevBackend) return 'dev';
-  if (environment.hasConfiguredApi) return 'http';
+/** True when the configuration is unusable and the app must not proceed. */
+export function hasBlockingEnvironmentIssues(): boolean {
+  return blockingIssues(validateEnvironment()).length > 0;
+}
+
+/**
+ * Which implementation backs the critical flows.
+ *
+ * `unavailable` is a first-class outcome: with no configured API and no mocks,
+ * server-dependent features report that honestly rather than failing oddly.
+ */
+export function resolveBackendMode(): BackendMode {
+  if (environment.enableMocks) return 'dev';
+  if (environment.apiBaseUrl) return 'http';
   return 'unavailable';
 }
+
+export type {
+  AppEnvironment,
+  BackendMode,
+  EnvironmentConfig,
+  EnvironmentValidationResult,
+} from './environment.types';

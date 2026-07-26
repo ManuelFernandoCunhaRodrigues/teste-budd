@@ -1,4 +1,5 @@
 import { environment } from '@/config/environment';
+import { AppError } from '@/services/errors';
 import type { ApiError, ApiResponse } from '@/types/api';
 
 /**
@@ -28,8 +29,26 @@ export function setAuthToken(token: string | null): void {
   authToken = token;
 }
 
+/**
+ * The configured base URL.
+ *
+ * Throws rather than falling back: with no validated URL there is nowhere
+ * legitimate to send the request, and inventing a host is what B-01 removed.
+ * Callers reach this only in `http` backend mode, which requires a URL.
+ */
+function requireBaseUrl(): string {
+  if (!environment.apiBaseUrl) {
+    throw new AppError('unavailable', {
+      userMessage: 'Serviço indisponível: o servidor não está configurado.',
+      detail: 'api client: EXPO_PUBLIC_API_URL is not configured',
+    });
+  }
+
+  return environment.apiBaseUrl;
+}
+
 function buildUrl(path: string, query?: Query): string {
-  const url = new URL(path.replace(/^\//, ''), `${environment.apiUrl.replace(/\/$/, '')}/`);
+  const url = new URL(path.replace(/^\//, ''), `${requireBaseUrl()}/`);
 
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
@@ -64,7 +83,7 @@ async function request<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), environment.apiTimeout);
+  const timeout = setTimeout(() => controller.abort(), environment.apiTimeoutMs);
 
   // Honour a caller-supplied signal alongside the timeout.
   options.signal?.addEventListener('abort', () => controller.abort());
