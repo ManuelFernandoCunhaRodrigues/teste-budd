@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -7,12 +8,19 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../global.css';
 
 import { Toast } from '@/components/feedback';
-import { assertEnvironment } from '@/config/environment';
-import { useSessionStore } from '@/store/sessionStore';
 import { colors } from '@/theme';
 
-// Fails fast at startup rather than surfacing as a confusing network error.
-assertEnvironment();
+/**
+ * Keeps the native splash up until React has mounted.
+ *
+ * Without this the splash auto-hides as soon as the bundle loads, showing a black
+ * frame before the first React paint. `expo-splash-screen` was declared in
+ * `app.json` but never called (B-03, §5.9).
+ *
+ * The rejection is ignored deliberately: it only means the splash was already
+ * hidden, which is not a failure worth surfacing.
+ */
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /**
  * Root layout: providers, the app-wide stack, and the global toast.
@@ -25,12 +33,14 @@ assertEnvironment();
  * see the same answer.
  */
 export default function RootLayout() {
-  const restoreSession = useSessionStore((state) => state.restoreSession);
-
   useEffect(() => {
-    // The store collapses concurrent calls, so a re-mount cannot double-validate.
-    void restoreSession();
-  }, [restoreSession]);
+    // Handed over to the boot route's own animation, which is already painted by
+    // the time this runs — so there is no gap and no second artificial wait.
+    //
+    // Session restore is no longer kicked off here: it is a blocking bootstrap
+    // task owned by `app/index`, so nothing navigates before it resolves.
+    void SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
