@@ -28,7 +28,7 @@ export function ProductListRow({ product }: ProductListRowProps) {
           </Text>
         ) : null}
 
-        <View className="mt-2 flex-row items-center gap-2">
+        <View className="mt-2 flex-row flex-wrap items-center gap-2">
           <Text className="text-md font-extrabold text-text">
             {formatCents(product.priceInCents)}
           </Text>
@@ -40,7 +40,7 @@ export function ProductListRow({ product }: ProductListRowProps) {
           {product.discount ? <Badge label={product.discount} tone="tint" /> : null}
         </View>
 
-        {product.promo ? <PromoTag label={product.promo} /> : null}
+        {product.promoNote ? <PromoTag label={product.promoNote} /> : null}
 
         <View className="mt-2.5 flex-row items-center justify-between gap-2">
           {showAddButton ? (

@@ -9,7 +9,7 @@ export interface PromoTagProps {
   withIcon?: boolean;
 }
 
-/** Green promotional line under a product's price. */
+/** Green promotional note under a product's price. Prices use price fields. */
 export function PromoTag({ label, withIcon = false }: PromoTagProps) {
   return (
     <View className="mt-1 flex-row items-center gap-1.5">

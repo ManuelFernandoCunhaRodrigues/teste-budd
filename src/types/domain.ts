@@ -20,8 +20,8 @@ export interface Product {
   oldPriceInCents?: MoneyInCents;
   /** Discount pill, e.g. `"-15%"`. */
   discount?: string;
-  /** Promotional note shown in green. */
-  promo?: string;
+  /** Promotional note shown in green. Monetary values belong in price fields. */
+  promoNote?: string;
   /** Corner badge on the product image, e.g. `"Mais pedido"`. */
   tag?: string;
   image: GradientToken;
@@ -137,9 +137,13 @@ export interface Artist {
 export interface Place {
   id: string;
   name: string;
+  category?: string;
   address: string;
+  distance?: string;
   hours: string;
-  image: GradientToken;
+  rating?: string;
+  isOpen?: boolean;
+  image?: GradientToken;
   coordinate: Coordinate;
   /** What tapping the card opens. */
   target: { type: 'bar'; id: string } | { type: 'event'; id: string };

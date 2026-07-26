@@ -21,14 +21,19 @@ export function ProductGridCard({ product }: ProductGridCardProps) {
         {product.tag ? <Badge className="absolute left-2 top-2" label={product.tag} tone="dark" /> : null}
       </GradientImage>
 
-      <View className="mt-2 flex-row items-center gap-2">
+      <View className="mt-2 flex-row flex-wrap items-center gap-2">
         <Text className="text-md font-extrabold text-text">
           {formatCents(product.priceInCents)}
         </Text>
+        {product.oldPriceInCents !== undefined ? (
+          <Text className="text-sm text-text-dim line-through">
+            {formatCents(product.oldPriceInCents)}
+          </Text>
+        ) : null}
         {product.discount ? <Badge label={product.discount} tone="tint" /> : null}
       </View>
 
-      {product.promo ? <PromoTag label={product.promo} withIcon /> : null}
+      {product.promoNote ? <PromoTag label={product.promoNote} withIcon /> : null}
 
       <Text className="mt-1 text-base text-text-soft" numberOfLines={2}>
         {product.name}

@@ -1,11 +1,19 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
-import { Linking, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Linking,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
 import { LoadingState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
-import { TAB_BAR_HEIGHT } from '@/components/navigation';
+import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
 import { Button, IconButton } from '@/components/ui';
 import { MapPinIcon } from '@/components/ui/icons';
 import { DEFAULT_REGION } from '@/constants/app';
@@ -34,6 +42,7 @@ export function MapScreen() {
   const { width } = useWindowDimensions();
   const ready = useDelayedFlag(loadingDelay.map);
   const location = useUserLocation();
+  const [selectedPlaceIndex, setSelectedPlaceIndex] = useState(0);
 
   const mapRef = useRef<MapView>(null);
   /**
@@ -48,6 +57,7 @@ export function MapScreen() {
   const cardWidth = width * 0.78;
   const gap = 12;
   const sidePadding = (width - cardWidth) / 2;
+  const carouselBottom = TAB_BAR_CONTENT_INSET + 10;
 
   // Animating a map that is off-screen is wasted work and can land mid-transition.
   useFocusEffect(
@@ -87,6 +97,14 @@ export function MapScreen() {
     // No fix yet — ask again rather than doing nothing.
     location.retry();
   }, [location, centerOn]);
+
+  const handleCarouselScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const nextIndex = Math.round(event.nativeEvent.contentOffset.x / (cardWidth + gap));
+      setSelectedPlaceIndex(Math.max(0, Math.min(PLACES.length - 1, nextIndex)));
+    },
+    [cardWidth, gap],
+  );
 
   if (!ready) {
     return (
@@ -185,7 +203,7 @@ export function MapScreen() {
       ) : null}
 
       {/* Sits above the carousel and clear of the tab bar. */}
-      <View className="absolute right-4" style={{ bottom: TAB_BAR_HEIGHT + 122 }}>
+      <View className="absolute right-4" style={{ bottom: carouselBottom + 252 }}>
         <IconButton
           accessibilityHint="Centraliza o mapa na sua posição atual"
           accessibilityLabel="Minha localização"
@@ -198,20 +216,22 @@ export function MapScreen() {
         </IconButton>
       </View>
 
-      <View className="absolute left-0 right-0" style={{ bottom: TAB_BAR_HEIGHT - 30 }}>
+      <View className="absolute left-0 right-0" style={{ bottom: carouselBottom }}>
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: sidePadding, gap }}
           decelerationRate="fast"
           horizontal
+          onMomentumScrollEnd={handleCarouselScrollEnd}
           showsHorizontalScrollIndicator={false}
           snapToAlignment="start"
           snapToInterval={cardWidth + gap}
         >
-          {PLACES.map((place) => (
+          {PLACES.map((place, index) => (
             <PlaceCard
               key={place.id}
               onPress={() => openPlace(place)}
               place={place}
+              selected={index === selectedPlaceIndex}
               width={cardWidth}
             />
           ))}

@@ -53,12 +53,17 @@ export function ScreenHeader({
         <View className="w-11" />
       )}
 
-      <View className={cn('flex-row items-center gap-2.5', centered ? '' : 'flex-1')}>
+      <View
+        className={cn(
+          'min-w-0 flex-row items-center gap-2.5',
+          centered ? 'flex-1 justify-center' : 'flex-1',
+        )}
+      >
         {icon}
         <Text
           accessibilityRole="header"
-          className="text-5xl font-extrabold text-text"
-          numberOfLines={1}
+          className={cn('min-w-0 shrink text-5xl font-extrabold text-text', centered && 'text-center')}
+          numberOfLines={2}
         >
           {title}
         </Text>

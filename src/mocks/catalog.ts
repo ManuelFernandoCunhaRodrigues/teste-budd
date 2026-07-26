@@ -114,10 +114,11 @@ function priceFor(venueId: string, authored: string): MoneyInCents {
 }
 
 interface Extras {
+  price?: string;
   description?: string;
   oldPrice?: string;
   discount?: string;
-  promo?: string;
+  promoNote?: string;
   tag?: string;
 }
 
@@ -127,12 +128,12 @@ function offer(venueId: string, authored: AuthoredProduct, extras: Extras = {}):
     id: authored.id,
     venueId,
     name: authored.name,
-    priceInCents: priceFor(venueId, authored.price),
+    priceInCents: priceFor(venueId, extras.price ?? authored.price),
     image: authored.image,
     ...(extras.description ? { description: extras.description } : {}),
     ...(extras.oldPrice ? { oldPriceInCents: priceFor(venueId, extras.oldPrice) } : {}),
     ...(extras.discount ? { discount: extras.discount } : {}),
-    ...(extras.promo ? { promo: extras.promo } : {}),
+    ...(extras.promoNote ? { promoNote: extras.promoNote } : {}),
     ...(extras.tag ? { tag: extras.tag } : {}),
   };
 }
@@ -141,9 +142,17 @@ function offer(venueId: string, authored: AuthoredProduct, extras: Extras = {}):
 export function buildFeaturedProducts(venueId: string): Product[] {
   return [
     offer(venueId, base.chopp, { tag: 'Mais pedido' }),
-    offer(venueId, base.balde, { promo: 'R$ 39,90' }),
+    offer(venueId, base.balde, {
+      price: 'R$ 39,90',
+      oldPrice: base.balde.price,
+      discount: '-20%',
+    }),
     offer(venueId, base.caipirinhaLimao),
-    offer(venueId, base.ginTonica, { promo: 'R$ 19,90' }),
+    offer(venueId, base.ginTonica, {
+      price: 'R$ 19,90',
+      oldPrice: base.ginTonica.price,
+      discount: '-17%',
+    }),
   ];
 }
 
@@ -159,7 +168,7 @@ export function buildMenuSections(venueId: string): MenuSection[] {
           description: 'Heineken ou Império gelada',
           oldPrice: 'R$ 59,90',
           discount: '-15%',
-          promo: 'Promo 1ª pedido',
+          promoNote: 'Promo 1ª pedido',
         }),
         offer(venueId, base.imperio, { description: 'Garrafa gelada' }),
       ],
