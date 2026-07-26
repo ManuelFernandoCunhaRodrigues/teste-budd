@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 import { STORAGE_KEYS } from '@/constants/storage';
+import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 import { resetAuthStorageForTests } from '@/services/auth/authStorage';
 
 import { resetSessionLatchForTests, useSessionStore } from '../sessionStore';
@@ -23,6 +24,7 @@ beforeEach(() => {
   clearSecureStore();
   resetAuthStorageForTests();
   resetSessionLatchForTests();
+  useReviewsStore.getState().reset();
   useSessionStore.setState({
     status: 'checking',
     accessToken: null,
@@ -223,6 +225,21 @@ describe('signOut', () => {
     await useSessionStore.getState().signOut();
 
     expect(useWalletStore.getState().balanceInCents).toBeNull();
+  });
+
+  it('clears review drafts so they cannot leak into the next session', async () => {
+    await useSessionStore.getState().signIn(VALID);
+    useReviewsStore.getState().updateDraft({
+      venueId: 'bar-do-ze',
+      userId: 'user-demo',
+      authorName: 'Ana Souza',
+      stars: 5,
+      text: 'Meu rascunho desta conta.',
+    });
+
+    await useSessionStore.getState().signOut();
+
+    expect(useReviewsStore.getState().reviews).toHaveLength(0);
   });
 
   it('is safe to call twice', async () => {

@@ -72,4 +72,12 @@ export const unavailableBackend: BackendPort = {
     ),
   fetchRechargeStatus: () => Promise.reject(unavailableError('fetchRechargeStatus')),
   fetchWalletTransactions: () => Promise.reject(unavailableError('fetchWalletTransactions')),
+
+  submitReview: () =>
+    Promise.reject(
+      unavailableError(
+        'submitReview',
+        'Nao foi possivel publicar sua avaliacao agora. O rascunho ficou salvo para tentar novamente.',
+      ),
+    ),
 };

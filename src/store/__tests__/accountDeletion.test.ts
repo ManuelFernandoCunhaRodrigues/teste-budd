@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 import { STORAGE_KEYS } from '@/constants/storage';
+import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 import { resetAuthStorageForTests } from '@/services/auth/authStorage';
 import { AppError } from '@/services/errors';
 
@@ -30,6 +31,7 @@ beforeEach(() => {
   clearSecureStore();
   resetAuthStorageForTests();
   resetSessionLatchForTests();
+  useReviewsStore.getState().reset();
   useSessionStore.setState({
     status: 'checking',
     accessToken: null,
@@ -84,12 +86,20 @@ it('clears account-scoped data on success', async () => {
     updatedAt: new Date().toISOString(),
   });
   useFavoritesStore.setState({ barIds: ['bar-do-ze'] });
+  useReviewsStore.getState().updateDraft({
+    venueId: 'bar-do-ze',
+    userId: 'user-demo',
+    authorName: 'Ana Souza',
+    stars: 5,
+    text: 'Rascunho da conta.',
+  });
 
   await useSessionStore.getState().deleteAccount();
 
   expect(useCartStore.getState().items).toHaveLength(0);
   expect(useWalletStore.getState().balanceInCents).toBeNull();
   expect(useFavoritesStore.getState().barIds).toHaveLength(0);
+  expect(useReviewsStore.getState().reviews).toHaveLength(0);
 });
 
 it('revokes the session so the deleted account cannot sign in again', async () => {
@@ -136,12 +146,20 @@ describe('when the server refuses', () => {
       venue: { id: BARS[0].id, name: BARS[0].name },
       product: findVenueProduct(BARS[0].id, 'chopp-artesanal-500'),
     });
+    useReviewsStore.getState().updateDraft({
+      venueId: BARS[0].id,
+      userId: 'user-demo',
+      authorName: 'Ana Souza',
+      stars: 4,
+      text: 'Nao apague sem confirmar no servidor.',
+    });
     failDeletion(new AppError('timeout'));
 
     await useSessionStore.getState().deleteAccount().catch(() => undefined);
 
     // Clearing the device on a failed deletion would fake the outcome.
     expect(useCartStore.getState().items).toHaveLength(1);
+    expect(useReviewsStore.getState().reviews).toHaveLength(1);
     await expect(SecureStore.getItemAsync(STORAGE_KEYS.session)).resolves.toBeTruthy();
   });
 

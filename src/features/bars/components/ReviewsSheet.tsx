@@ -1,10 +1,18 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Avatar, Button, Divider } from '@/components/ui';
+import type { ReviewPublicationStatus } from '@/domain/reviews/reviewTypes';
 import { REVIEWS } from '@/mocks/reviews';
+import { normalizeError } from '@/services/errors';
+import { useSessionStore } from '@/store/sessionStore';
+import { showToast } from '@/store/toastStore';
 import type { Bar, Review } from '@/types/domain';
 
-import { useReviewsStore } from '../store/reviewsStore';
+import {
+  selectActiveReview,
+  selectVisibleReviewsForVenue,
+  useReviewsStore,
+} from '../store/reviewsStore';
 import { ReviewComposer } from './ReviewComposer';
 
 export interface ReviewsSheetProps {
@@ -15,16 +23,37 @@ export interface ReviewsSheetProps {
 
 /** Bottom sheet listing a venue's reviews and letting the user add one. */
 export function ReviewsSheet({ bar, visible, onClose }: ReviewsSheetProps) {
-  const userReviews = useReviewsStore((state) => state.byBarId[bar.id] ?? []);
-  const submit = useReviewsStore((state) => state.submit);
+  const user = useSessionStore((state) => state.user);
+  const draftUserId = user?.id ?? 'anonymous';
+  const draftAuthorName = user?.name ?? 'Voce';
 
-  const reviews: Review[] = [...userReviews, ...REVIEWS];
+  const localReviews = useReviewsStore((state) => selectVisibleReviewsForVenue(state, bar.id));
+  const activeReview = useReviewsStore((state) => selectActiveReview(state, bar.id, draftUserId));
+  const updateDraft = useReviewsStore((state) => state.updateDraft);
+  const discardDraft = useReviewsStore((state) => state.discardDraft);
+  const submitDraft = useReviewsStore((state) => state.submitDraft);
+
+  const reviews: DisplayReview[] = [...localReviews, ...REVIEWS];
+
+  const handleSubmit = async () => {
+    if (!user) {
+      showToast('Entre novamente para publicar sua avaliacao.');
+      return;
+    }
+
+    try {
+      const result = await submitDraft({ venueId: bar.id, user });
+      showToast(result.message);
+    } catch (error) {
+      showToast(normalizeError(error).userMessage);
+    }
+  };
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       {/* Tapping the scrim dismisses, matching the design. */}
       <Pressable
-        accessibilityLabel="Fechar avaliações"
+        accessibilityLabel="Fechar avaliacoes"
         accessibilityRole="button"
         className="flex-1 justify-end bg-black/55"
         onPress={onClose}
@@ -44,14 +73,37 @@ export function ReviewsSheet({ bar, visible, onClose }: ReviewsSheetProps) {
               <View>
                 <Text className="text-2xl text-primary">★★★★★</Text>
                 <Text className="mt-1 text-base text-text-muted">
-                  {bar.reviewsCount} avaliações • Super
+                  {bar.reviewsCount} avaliacoes • Super
                 </Text>
               </View>
             </View>
 
             <Divider className="my-4.5" />
 
-            <ReviewComposer onSubmit={(stars, text) => submit(bar.id, stars, text)} />
+            <ReviewComposer
+              errorMessage={activeReview?.errorMessage}
+              onChangeStars={(stars) =>
+                updateDraft({
+                  venueId: bar.id,
+                  userId: draftUserId,
+                  authorName: draftAuthorName,
+                  stars,
+                })
+              }
+              onChangeText={(text) =>
+                updateDraft({
+                  venueId: bar.id,
+                  userId: draftUserId,
+                  authorName: draftAuthorName,
+                  text,
+                })
+              }
+              onDiscard={() => discardDraft(bar.id, draftUserId)}
+              onSubmit={handleSubmit}
+              stars={activeReview?.stars ?? 0}
+              status={activeReview?.status ?? 'idle'}
+              text={activeReview?.text ?? ''}
+            />
 
             <Divider className="my-4.5" />
 
@@ -67,18 +119,29 @@ export function ReviewsSheet({ bar, visible, onClose }: ReviewsSheetProps) {
   );
 }
 
-function ReviewRow({ review }: { review: Review }) {
+type DisplayReview = Review & {
+  status?: ReviewPublicationStatus;
+  errorMessage?: string;
+};
+
+function ReviewRow({ review }: { review: DisplayReview }) {
+  const dateLabel =
+    review.status === 'submitting' ? 'Enviando' : review.status === 'failed' ? 'Falhou' : review.date;
+
   return (
     <View className="border-t border-surface-alt py-3">
       <View className="flex-row items-center gap-2.5">
         <Avatar className="bg-surface-raised" initial={review.initial} size={38} />
         <View className="min-w-0 flex-1">
           <Text className="text-md font-bold text-text">{review.author}</Text>
-          <Text className="text-xs text-text-dim">{review.date}</Text>
+          <Text className="text-xs text-text-dim">{dateLabel}</Text>
         </View>
         <Text className="text-base font-extrabold text-primary">★ {review.stars}</Text>
       </View>
       <Text className="mt-2 text-base leading-5 text-text-soft">{review.text}</Text>
+      {review.status === 'failed' && review.errorMessage ? (
+        <Text className="mt-1.5 text-sm text-danger-alt">{review.errorMessage}</Text>
+      ) : null}
     </View>
   );
 }

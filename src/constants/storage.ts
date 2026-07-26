@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   cart: 'budd:cart',
   favorites: 'budd:favorites',
   preferences: 'budd:preferences',
+  reviews: 'budd:reviews',
   session: 'budd:session',
 } as const;
 

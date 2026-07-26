@@ -51,6 +51,22 @@ it('refuses to create a top-up charge', async () => {
   ).rejects.toMatchObject({ code: 'unavailable' });
 });
 
+it('refuses to publish a review instead of faking success', async () => {
+  const error = await rejection(() =>
+    unavailableBackend.submitReview({
+      venueId: 'v',
+      userId: 'u',
+      authorName: 'Ana',
+      stars: 5,
+      text: 'Gostei do lugar.',
+      idempotencyKey: 'review-unavailable-1',
+    }),
+  );
+
+  expect(error.code).toBe('unavailable');
+  expect(error.userMessage).toMatch(/rascunho/i);
+});
+
 it('refuses to report a balance rather than answering zero', async () => {
   // Answering "R$ 0,00" would be a fabricated fact about the user's money.
   await expect(unavailableBackend.fetchWalletBalance()).rejects.toMatchObject({

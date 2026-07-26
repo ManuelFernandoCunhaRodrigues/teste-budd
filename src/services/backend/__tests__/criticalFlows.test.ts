@@ -102,6 +102,39 @@ describe('order creation', () => {
   });
 });
 
+describe('reviews', () => {
+  it('publishes a valid review through the dev backend', async () => {
+    const review = await backend.submitReview({
+      venueId: VENUE.id,
+      userId: 'user-demo',
+      authorName: 'Ana Souza',
+      stars: 5,
+      text: 'Atendimento excelente e pedido rapido.',
+      idempotencyKey: 'review-publish-1',
+    });
+
+    expect(review.venueId).toBe(VENUE.id);
+    expect(review.userId).toBe('user-demo');
+    expect(review.text).toBe('Atendimento excelente e pedido rapido.');
+  });
+
+  it('returns the same review for a repeated idempotency key', async () => {
+    const input = {
+      venueId: VENUE.id,
+      userId: 'user-demo',
+      authorName: 'Ana Souza',
+      stars: 4,
+      text: 'Boa musica e fila curta.',
+      idempotencyKey: 'review-idem-1',
+    };
+
+    const first = await backend.submitReview(input);
+    const second = await backend.submitReview(input);
+
+    expect(second.id).toBe(first.id);
+  });
+});
+
 describe('order payment', () => {
   it('opens a pending PIX charge, not a paid one', async () => {
     const order = await backend.createOrder({

@@ -1,5 +1,6 @@
 import type { CreateOrderInput, Order } from '@/domain/orders/orderTypes';
 import type { Payment, StartPaymentInput } from '@/domain/payments/paymentTypes';
+import type { PublishedReview, SubmitReviewInput } from '@/domain/reviews/reviewTypes';
 import type {
   CreateReservationInput,
   Ticket,
@@ -56,6 +57,9 @@ export interface BackendPort {
   createRecharge(input: CreateRechargeInput): Promise<RechargeCharge>;
   fetchRechargeStatus(rechargeId: string): Promise<RechargeStatus>;
   fetchWalletTransactions(): Promise<WalletTransaction[]>;
+
+  // --- Reviews ------------------------------------------------------------
+  submitReview(input: SubmitReviewInput): Promise<PublishedReview>;
 }
 
 /** Which implementation is serving the critical flows. */

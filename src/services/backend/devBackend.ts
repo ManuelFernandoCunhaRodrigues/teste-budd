@@ -2,6 +2,8 @@ import { RECHARGE } from '@/constants/app';
 import type { CreateOrderInput, Order, OrderLine } from '@/domain/orders/orderTypes';
 import type { PaymentStatus } from '@/domain/payments/paymentStatus';
 import type { Payment, PixCharge, StartPaymentInput } from '@/domain/payments/paymentTypes';
+import type { PublishedReview, SubmitReviewInput } from '@/domain/reviews/reviewTypes';
+import { toReviewInitial, validateReviewFields } from '@/domain/reviews/reviewTypes';
 import type {
   CreateReservationInput,
   Ticket,
@@ -89,6 +91,7 @@ const db = {
   recharges: new Map<string, DevRecharge>(),
   reservations: new Map<string, TicketReservation>(),
   tickets: [] as Ticket[],
+  reviews: [] as PublishedReview[],
   transactions: [] as WalletTransaction[],
   wallet: { balanceInCents: 0, updatedAt: new Date().toISOString() } as WalletBalance,
 
@@ -100,6 +103,7 @@ const db = {
   paymentKeys: new Map<string, string>(),
   rechargeKeys: new Map<string, string>(),
   reservationKeys: new Map<string, string>(),
+  reviewKeys: new Map<string, string>(),
 
   /** Charges already applied to the wallet, so a replayed settlement is a no-op. */
   settledCharges: new Set<string>(),
@@ -319,12 +323,14 @@ export const devBackendControls = {
     db.recharges.clear();
     db.reservations.clear();
     db.tickets.length = 0;
+    db.reviews.length = 0;
     db.transactions.length = 0;
     db.wallet = { balanceInCents: 0, updatedAt: new Date().toISOString() };
     db.orderKeys.clear();
     db.paymentKeys.clear();
     db.rechargeKeys.clear();
     db.reservationKeys.clear();
+    db.reviewKeys.clear();
     db.settledCharges.clear();
     db.deletedUserIds.clear();
     db.tierStock.clear();
@@ -412,6 +418,8 @@ export const devBackend: BackendPort = {
     db.rechargeKeys.clear();
     db.reservations.clear();
     db.reservationKeys.clear();
+    db.reviews.length = 0;
+    db.reviewKeys.clear();
     db.settledCharges.clear();
     db.tickets.length = 0;
     db.transactions.length = 0;
@@ -757,6 +765,57 @@ export const devBackend: BackendPort = {
   async fetchWalletTransactions(): Promise<WalletTransaction[]> {
     await latency();
     return [...db.transactions];
+  },
+
+  async submitReview(input: SubmitReviewInput): Promise<PublishedReview> {
+    await latency();
+
+    const existingId = db.reviewKeys.get(input.idempotencyKey);
+    if (existingId) {
+      const existing = db.reviews.find((review) => review.id === existingId);
+      if (existing) return existing;
+    }
+
+    const user = USERS.find((candidate) => candidate.id === input.userId);
+    if (!user || db.deletedUserIds.has(user.id)) {
+      throw new AppError('unauthenticated', {
+        userMessage: 'Entre novamente para publicar sua avaliacao.',
+        detail: 'devBackend: review user is not active',
+      });
+    }
+
+    const venue = findBarById(input.venueId);
+    if (!venue) {
+      throw new AppError('not_found', {
+        userMessage: 'Nao encontramos este bar para publicar a avaliacao.',
+        detail: `devBackend: venue ${input.venueId} not found`,
+      });
+    }
+
+    const validation = validateReviewFields(input.stars, input.text);
+    if (validation) {
+      throw new AppError('validation', {
+        userMessage: validation,
+        detail: `devBackend: invalid review for ${input.venueId}`,
+      });
+    }
+
+    const publishedAt = new Date().toISOString();
+    const review: PublishedReview = {
+      id: nextId('rev'),
+      venueId: venue.id,
+      userId: user.id,
+      author: user.name,
+      initial: toReviewInitial(user.name),
+      date: 'agora',
+      stars: input.stars,
+      text: input.text.trim(),
+      publishedAt,
+    };
+
+    db.reviews.unshift(review);
+    db.reviewKeys.set(input.idempotencyKey, review.id);
+    return review;
   },
 };
 

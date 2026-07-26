@@ -1,5 +1,6 @@
 import type { CreateOrderInput, Order } from '@/domain/orders/orderTypes';
 import type { Payment, StartPaymentInput } from '@/domain/payments/paymentTypes';
+import type { PublishedReview, SubmitReviewInput } from '@/domain/reviews/reviewTypes';
 import type {
   CreateReservationInput,
   Ticket,
@@ -159,6 +160,16 @@ export const httpBackend: BackendPort = {
   fetchWalletTransactions() {
     return guard('fetchWalletTransactions', () =>
       api.get<WalletTransaction[]>(ENDPOINTS.walletTransactions),
+    );
+  },
+
+  submitReview(input: SubmitReviewInput) {
+    return guard('submitReview', () =>
+      api.post<PublishedReview>(
+        ENDPOINTS.barReviews(input.venueId),
+        { stars: input.stars, text: input.text.trim() },
+        idempotent(input.idempotencyKey),
+      ),
     );
   },
 };

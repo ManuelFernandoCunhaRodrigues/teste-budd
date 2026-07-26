@@ -4,6 +4,7 @@ import * as accountService from '@/services/account/accountService';
 import * as authService from '@/services/auth/authService';
 import type { AuthenticatedUser, SignInCredentials } from '@/services/auth/authTypes';
 import { normalizeError, reportError } from '@/services/errors';
+import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 
 import { useCartStore } from './cartStore';
 import { useFavoritesStore } from './favoritesStore';
@@ -44,6 +45,7 @@ function clearAccountScopedData(): void {
   useCartStore.getState().clear();
   useWalletStore.getState().reset();
   useFavoritesStore.getState().reset();
+  useReviewsStore.getState().reset();
 }
 
 /**
