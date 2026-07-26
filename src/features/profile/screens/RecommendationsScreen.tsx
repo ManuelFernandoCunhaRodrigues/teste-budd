@@ -6,6 +6,7 @@ import { Screen, ScreenHeader } from '@/components/layout';
 import { Card, GradientImage } from '@/components/ui';
 import { StarOutlineIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
+import { recommendationHref } from '@/domain/recommendations/recommendationTargets';
 import { RECOMMENDATIONS } from '@/mocks/profile';
 import { selectHasInterests, usePreferencesStore } from '@/store/preferencesStore';
 
@@ -39,8 +40,9 @@ export function RecommendationsScreen() {
             accessibilityLabel={`${recommendation.kind}: ${recommendation.name}. ${recommendation.reason}`}
             className="min-h-[120px] flex-row"
             key={recommendation.id}
-            // Both kinds land on the ROLÊ feed, which opens on the matching tab.
-            onPress={() => router.push(ROUTES.role)}
+            // Opens the recommended entity itself. Every card used to push
+            // `/role` regardless of what it suggested (M-03).
+            onPress={() => router.push(recommendationHref(recommendation))}
           >
             <GradientImage className="w-[38%]" token={recommendation.image} />
 
