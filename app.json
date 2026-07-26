@@ -8,6 +8,7 @@
     "scheme": "budd",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#000000",
+    "platforms": ["ios", "android"],
     "ios": {
       "bundleIdentifier": "com.budd.app",
       "supportsTablet": true,
