@@ -34,13 +34,18 @@ export interface MenuSection {
   items: Product[];
 }
 
-/** A discount voucher offered by a venue. */
+/**
+ * A discount voucher offered by a venue.
+ *
+ * Amounts are integer cents so they format through the same `pt-BR` path as every
+ * other price (M-05). They used to be display strings (`"R$ 19"`), which bypassed
+ * formatting entirely and could not be compared against a cart total.
+ */
 export interface Coupon {
   id: string;
-  /** Face value, e.g. `"R$ 19"`. */
-  value: string;
-  /** Minimum spend required, e.g. `"R$ 29"`. */
-  minimum: string;
+  valueInCents: MoneyInCents;
+  /** Minimum spend required to use the voucher. */
+  minimumInCents: MoneyInCents;
 }
 
 /** Geographic point. */
@@ -118,6 +123,14 @@ export interface Artist {
   albums: number;
   /** Follower count in thousands, as shown in the design. */
   followers: number;
+  /**
+   * The artist's official page, when known.
+   *
+   * Optional because the catalogue has no URLs today. The "Site" control is
+   * disabled while this is absent — the M-02 defect was that the button simply
+   * repeated the card's own action and never opened anything.
+   */
+  website?: string;
 }
 
 /** A pin on the map with its bottom-sheet card. */
@@ -143,7 +156,17 @@ export interface Review {
   text: string;
 }
 
-/** A personalised suggestion on the recommendations screen. */
+/**
+ * A personalised suggestion on the recommendations screen.
+ *
+ * `target` names a specific entity. It used to be `{ type: 'bars' | 'events' }` —
+ * only a feed tab — so every card navigated to `/role` regardless of what it was
+ * recommending (M-03).
+ *
+ * A `Produto` suggestion targets the venue that sells it: there is no product
+ * route, and sending the user to the menu they can order from is the real
+ * destination rather than an invented one.
+ */
 export interface Recommendation {
   id: string;
   kind: 'Bar' | 'Evento' | 'Produto';
@@ -151,5 +174,5 @@ export interface Recommendation {
   /** Why this was suggested. */
   reason: string;
   image: GradientToken;
-  target: { type: 'bars' } | { type: 'events' };
+  target: { type: 'bar'; barId: string } | { type: 'event'; eventId: string };
 }

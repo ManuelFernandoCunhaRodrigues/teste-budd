@@ -185,9 +185,9 @@ export function buildMenuSections(venueId: string): MenuSection[] {
   ];
 }
 
-/** Vouchers shown in the venue detail carousel. */
+/** Vouchers shown in the venue detail carousel. Amounts in integer cents. */
 export const COUPONS: Coupon[] = [
-  { id: 'cupom-19', value: 'R$ 19', minimum: 'R$ 29' },
-  { id: 'cupom-14', value: 'R$ 14', minimum: 'R$ 24' },
-  { id: 'cupom-5', value: 'R$ 5', minimum: 'R$ 15' },
+  { id: 'cupom-19', valueInCents: 1_900, minimumInCents: 2_900 },
+  { id: 'cupom-14', valueInCents: 1_400, minimumInCents: 2_400 },
+  { id: 'cupom-5', valueInCents: 500, minimumInCents: 1_500 },
 ];

@@ -72,7 +72,13 @@ export const INTEREST_GROUPS = [
   { id: 'preco', title: 'Faixa de preço', items: ['Econômico', 'Intermediário', 'Premium'] },
 ] as const;
 
-/** Suggestions shown once at least one interest is selected. */
+/**
+ * Suggestions shown once at least one interest is selected.
+ *
+ * Each `target` points at an id that really exists in `mocks/bars` /
+ * `mocks/events`, asserted by a test. Previously they only named a feed tab, so
+ * tapping any card landed on `/role` (M-03).
+ */
 export const RECOMMENDATIONS: Recommendation[] = [
   {
     id: 'rec-quintal',
@@ -80,7 +86,7 @@ export const RECOMMENDATIONS: Recommendation[] = [
     name: 'Quintal 74',
     reason: 'Combina com Música ao vivo e Cerveja',
     image: 'blue',
-    target: { type: 'bars' },
+    target: { type: 'bar', barId: 'quintal-74' },
   },
   {
     id: 'rec-sunset',
@@ -88,15 +94,17 @@ export const RECOMMENDATIONS: Recommendation[] = [
     name: 'Sunset Underground',
     reason: 'Perto de você · Festas',
     image: 'violet',
-    target: { type: 'events' },
+    target: { type: 'event', eventId: 'sunset-underground' },
   },
   {
     id: 'rec-combo',
     kind: 'Produto',
-    name: 'Combo Duplo + 2 Chopps',
+    name: 'Balde 6 Long Necks',
     reason: 'Baseado em Petiscos e Cerveja',
     image: 'green',
-    target: { type: 'bars' },
+    // A product suggestion opens the venue that sells it — there is no product
+    // route, and this is where the item can actually be ordered.
+    target: { type: 'bar', barId: 'bar-do-ze' },
   },
 ];
 
