@@ -1,0 +1,37 @@
+declare const palette: {
+  readonly bg: string;
+  readonly surface: string;
+  readonly 'surface-alt': string;
+  readonly 'surface-raised': string;
+  readonly 'surface-muted': string;
+  readonly 'surface-nav': string;
+  readonly 'surface-sheet': string;
+  readonly primary: string;
+  readonly 'primary-tint': string;
+  readonly 'primary-border': string;
+  readonly 'primary-surface': string;
+  readonly flame: string;
+  readonly 'flame-light': string;
+  readonly 'flame-dark': string;
+  readonly border: string;
+  readonly 'border-subtle': string;
+  readonly 'border-muted': string;
+  readonly 'border-green': string;
+  readonly text: string;
+  readonly 'text-softer': string;
+  readonly 'text-soft': string;
+  readonly 'text-muted': string;
+  readonly 'text-dim': string;
+  readonly 'text-faint': string;
+  readonly 'text-ghost': string;
+  readonly danger: string;
+  readonly 'danger-alt': string;
+  readonly 'danger-solid': string;
+  readonly 'danger-border': string;
+  readonly 'badge-bar': string;
+  readonly location: string;
+  readonly whatsapp: string;
+  readonly 'map-backdrop': string;
+};
+
+export = palette;
