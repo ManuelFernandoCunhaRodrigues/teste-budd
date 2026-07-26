@@ -2,6 +2,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { CouponIcon } from '@/components/ui/icons';
 import type { Coupon } from '@/types/domain';
+import { formatCents } from '@/utils/money';
 
 export interface CouponsRowProps {
   coupons: Coupon[];
@@ -17,7 +18,9 @@ export function CouponsRow({ coupons }: CouponsRowProps) {
     >
       {coupons.map((coupon) => (
         <View
-          accessibilityLabel={`Cupom de ${coupon.value}, mínimo ${coupon.minimum}`}
+          accessibilityLabel={`Cupom de ${formatCents(coupon.valueInCents)}, mínimo ${formatCents(
+            coupon.minimumInCents,
+          )}`}
           className="flex-row items-center gap-2.5 rounded-lg border border-border bg-surface px-4 py-3"
           key={coupon.id}
         >
@@ -26,8 +29,12 @@ export function CouponsRow({ coupons }: CouponsRowProps) {
           </View>
           <View>
             <Text className="text-xs text-text-muted">Cupom de</Text>
-            <Text className="text-lg font-extrabold text-primary">{coupon.value}</Text>
-            <Text className="text-2xs text-text-dim">Mínimo {coupon.minimum}</Text>
+            <Text className="text-lg font-extrabold text-primary">
+              {formatCents(coupon.valueInCents)}
+            </Text>
+            <Text className="text-2xs text-text-dim">
+              Mínimo {formatCents(coupon.minimumInCents)}
+            </Text>
           </View>
         </View>
       ))}
