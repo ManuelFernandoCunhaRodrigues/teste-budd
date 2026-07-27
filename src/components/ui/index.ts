@@ -6,7 +6,6 @@ export { Chip, type ChipProps } from './Chip';
 export { Divider } from './Divider';
 export { GradientImage, type GradientImageProps } from './GradientImage';
 export { IconButton, type IconButtonProps, type IconButtonVariant } from './IconButton';
-export { Skeleton } from './Skeleton';
 export {
   RatingBadge,
   RatingLabel,

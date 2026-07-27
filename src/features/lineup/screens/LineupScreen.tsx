@@ -2,10 +2,10 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 
-import { EmptyState } from '@/components/feedback';
+import { EmptyState, LoadingState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
 import { useTabBarContentInset } from '@/components/navigation';
-import { Chip, Skeleton } from '@/components/ui';
+import { Chip } from '@/components/ui';
 import { EmptyBoxIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
 import type { Coordinate } from '@/types/domain';
@@ -167,11 +167,7 @@ export function LineupScreen() {
   if (isLoading) {
     return (
       <Screen>
-        <View className="gap-3.5 px-4.5 pt-6">
-          <Skeleton className="h-[92px] rounded-xl" />
-          <Skeleton className="h-[132px] rounded-xl" />
-          <Skeleton className="h-[132px] rounded-xl" />
-        </View>
+        <LoadingState variant="lineup" />
       </Screen>
     );
   }

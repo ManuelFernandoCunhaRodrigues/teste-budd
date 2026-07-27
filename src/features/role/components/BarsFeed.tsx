@@ -2,9 +2,8 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, View } from 'react-native';
 
-import { EmptyState, ErrorState } from '@/components/feedback';
+import { EmptyState, ErrorState, SkeletonList } from '@/components/feedback';
 import { useTabBarContentInset } from '@/components/navigation';
-import { Skeleton } from '@/components/ui';
 import { EmptyHeartIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
 import { BarCard } from '@/features/bars';
@@ -48,11 +47,7 @@ export function BarsFeed({ header }: BarsFeedProps) {
       ListEmptyComponent={
         <View className="gap-3.5 px-4 pt-2">
           {status === 'loading' ? (
-            <>
-              <Skeleton className="h-[132px] rounded-xl" />
-              <Skeleton className="h-[132px] rounded-xl" />
-              <Skeleton className="h-[132px] rounded-xl" />
-            </>
+            <SkeletonList count={3} />
           ) : null}
 
           {status === 'error' ? (

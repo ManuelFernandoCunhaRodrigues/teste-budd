@@ -47,7 +47,7 @@ export function EventDetailScreen({ eventId }: EventDetailScreenProps) {
   );
 
   if (status === 'loading' || status === 'idle') {
-    return <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />;
+    return <LoadingState variant="role" />;
   }
 
   if (status === 'error' || !event) {

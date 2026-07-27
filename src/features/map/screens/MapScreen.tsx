@@ -167,11 +167,7 @@ export function MapScreen() {
   if (!ready) {
     return (
       <Screen>
-        <LoadingState
-          description="Localizando bares perto de você…"
-          title="Abrindo o mapa"
-          variant="map"
-        />
+        <LoadingState variant="map" />
       </Screen>
     );
   }
