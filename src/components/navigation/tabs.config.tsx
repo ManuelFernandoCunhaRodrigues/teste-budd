@@ -113,8 +113,16 @@ export const ROW_PADDING_BOTTOM = 14;
 export const TAB_BAR_HEIGHT =
   ROW_PADDING_TOP + ICON_SIZE + ICON_LABEL_GAP + LABEL_RESERVED_HEIGHT + ROW_PADDING_BOTTOM;
 
-/** Side inset, so the floating bar never touches the screen edges. */
-export const TAB_BAR_HORIZONTAL_MARGIN = 8;
+/**
+ * Side inset, so the floating bar never touches the screen edges.
+ *
+ * Widening this narrows the bar, which pulls the outer tab centres inward and
+ * makes the notch clamp harder on small screens — see `NOTCH_WIDTH`. The design
+ * calls for 12–20; 16 was tried first and pushed the worst-case notch offset to
+ * 3.2pt, past the 3pt the geometry tests hold the line at. 12 is the widest
+ * value in that range that keeps it at 2.4pt.
+ */
+export const TAB_BAR_HORIZONTAL_MARGIN = 12;
 
 /**
  * Vertical gap below the bar. Deliberately zero.
@@ -137,8 +145,9 @@ export const CENTER_BUTTON_SIZE = 56;
  * Bounded on both sides. It must exceed `CENTER_BUTTON_SIZE` or the indicator
  * pokes out through the walls; and half of it must stay under 10% of the
  * narrowest supported bar width — that is where the outer tabs are centred, and
- * anything wider forces the notch to clamp away from them. At 64 the worst case
- * (a 320pt screen) is off by 1.6pt instead of 5.6pt.
+ * anything wider forces the notch to clamp away from them. On a 320pt screen the
+ * bar is 296pt wide, so the outer tabs sit at 29.6pt: at 64 the worst case is
+ * off by 2.4pt, against 6.4pt at 72.
  */
 export const NOTCH_WIDTH = 64;
 

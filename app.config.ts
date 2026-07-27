@@ -45,6 +45,16 @@ function readAndroidMapsKey(): string | undefined {
     );
   }
 
+  // `expo run:android` sets neither flag, so the loudest signal available is a
+  // warning: it produces exactly the APK whose map renders as an empty grey
+  // surface, with no error at runtime to explain it. Silence here cost a full
+  // debugging session once.
+  console.warn(
+    `[budd] ${ANDROID_MAPS_KEY} não definida. Expo Go não é afetado — usa as ` +
+      'credenciais dele. Já um build nativo local (expo run:android) sai sem ' +
+      'chave e o mapa aparece vazio, sem erro. Defina a variável e reconstrua.',
+  );
+
   return undefined;
 }
 

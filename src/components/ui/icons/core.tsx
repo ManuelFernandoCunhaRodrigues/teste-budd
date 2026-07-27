@@ -103,6 +103,35 @@ export function TrashIcon({ size = 15, color = DEFAULT_ICON_COLOR }: IconProps) 
   );
 }
 
+/**
+ * Stepper glyphs.
+ *
+ * Drawn rather than typeset: as `Text`, `−` and `+` are two different glyphs
+ * from the system font, with their own side bearings and baselines, so they
+ * refuse to sit on the same optical centre across platforms. Two strokes on the
+ * same 20×20 grid share one centre by construction.
+ */
+export function MinusIcon({ size = 14, color = DEFAULT_ICON_COLOR }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path d="M4.5 10h11" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function PlusIcon({ size = 14, color = DEFAULT_ICON_COLOR }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M10 4.5v11M4.5 10h11"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function EditIcon({ size = 18, color = DEFAULT_ICON_COLOR }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">

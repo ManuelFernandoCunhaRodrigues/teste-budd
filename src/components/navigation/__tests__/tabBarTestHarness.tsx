@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react-native';
-import type { PressableProps } from 'react-native';
+import { Pressable, type PressableProps } from 'react-native';
 import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 
 import { TabBar, resolveActiveIndex } from '../TabBar';
-import { TabBarButton } from '../TabBarButton';
+import { TabBarButton, tabBarTriggerStyles } from '../TabBarButton';
 import { TAB_ITEMS } from '../tabs.config';
 
 /**
@@ -53,15 +53,28 @@ export async function renderTabBar(
     <SafeAreaProvider initialMetrics={metrics}>
       <TabBar activeIndex={activeIndex}>
         {TAB_ITEMS.map((item, index) => (
-          <TabBarButton
-            Icon={item.Icon}
-            iconSize={item.iconSize}
-            isActive={activeIndex === index}
+          <Pressable
+            accessibilityLabel={item.label}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeIndex === index }}
             key={item.name}
-            label={item.label}
             onPress={() => onPress(item.name)}
-            style={injectedButtonStyle}
-          />
+            style={(state) => [
+              typeof injectedButtonStyle === 'function'
+                ? injectedButtonStyle(state)
+                : injectedButtonStyle,
+              tabBarTriggerStyles.button,
+              state.pressed && tabBarTriggerStyles.pressed,
+            ]}
+            testID={`tab-${item.label}`}
+          >
+            <TabBarButton
+              Icon={item.Icon}
+              iconSize={item.iconSize}
+              isActive={activeIndex === index}
+              label={item.label}
+            />
+          </Pressable>
         ))}
       </TabBar>
     </SafeAreaProvider>,

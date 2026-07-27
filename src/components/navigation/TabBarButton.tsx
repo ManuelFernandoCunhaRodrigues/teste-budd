@@ -1,11 +1,5 @@
-import type { TabTriggerSlotProps } from 'expo-router/ui';
 import { useEffect } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  View,
-  type PressableProps,
-} from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -36,20 +30,15 @@ import {
   TAB_BAR_OVERHANG,
 } from './tabs.config';
 
-export interface TabBarButtonProps
-  extends Omit<TabTriggerSlotProps, 'children' | 'style'> {
+export interface TabBarButtonProps {
   /**
-   * Route-derived state supplied by the tabs layout. `TabTrigger` also injects
-   * `isFocused`; it is deliberately ignored so the icon, label and parent
-   * notch cannot acquire separate sources of truth.
+   * Route-derived state supplied by the tabs layout, shared with the notch and
+   * the trigger's accessibility state.
    */
   isActive: boolean;
-  /** Injected by `TabTrigger` when used with `asChild`. */
-  isFocused?: boolean;
   label: string;
   Icon: (props: IconProps) => React.JSX.Element;
   iconSize?: number;
-  style?: PressableProps['style'];
 }
 
 /**
@@ -63,20 +52,20 @@ export interface TabBarButtonProps
  *
  * The icon colour is a cross-fade between two copies because SVG `fill` cannot
  * be driven by an animated style; the label colour can be, so it is.
+ *
+ * This component is visual content only. `TabTrigger` itself is the Pressable
+ * and the flex item in the row. Keeping that host element direct is important:
+ * Expo Router 57 already renders a Pressable when `asChild` is omitted, while a
+ * slotted custom component makes layout depend on runtime style merging.
  */
 export function TabBarButton({
   isActive,
-  isFocused: _navigatorIsFocused,
   label,
   Icon,
   iconSize = ICON_SIZE,
-  onPress,
-  style,
-  ...props
 }: TabBarButtonProps) {
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(isActive ? 1 : 0);
-  const pressed = useSharedValue(0);
 
   // Driven from an effect, not the render body — mutating a shared value during
   // render is a side effect and misbehaves under concurrent rendering.
@@ -87,23 +76,12 @@ export function TabBarButton({
       : withTiming(target, { duration: duration.enter });
   }, [isActive, progress, reduceMotion]);
 
-  // Not wrapped in `useCallback`: `react-hooks/immutability` rejects writing to
-  // a shared value from inside a memoised callback, and memoising a handler this
-  // cheap buys nothing.
-  const setPressed = (value: number) => {
-    pressed.value = reduceMotion ? value : withTiming(value, { duration: duration.press });
-  };
-
   const lift = activeIconLift(iconSize);
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: -lift * progress.value },
-      {
-        scale:
-          (1 + (ACTIVE_ICON_SCALE - 1) * progress.value) *
-          (1 - (1 - PRESSED_SCALE) * pressed.value),
-      },
+      { scale: 1 + (ACTIVE_ICON_SCALE - 1) * progress.value },
     ],
   }));
 
@@ -115,26 +93,7 @@ export function TabBarButton({
   }));
 
   return (
-    <Pressable
-      {...props}
-      accessibilityLabel={label}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: isActive }}
-      // `TabTrigger` already avoids a duplicate navigation when focused, but
-      // still emits the useful `tabPress` event. Always forwarding preserves
-      // that native navigator behaviour.
-      onPress={onPress}
-      onPressIn={() => setPressed(1)}
-      onPressOut={() => setPressed(0)}
-      style={(state) => [
-        typeof style === 'function' ? style(state) : style,
-        // Last on purpose: `TabTrigger asChild` injects `flexDirection: row`.
-        // The visual contract is icon over label, and the raised icon remains
-        // inside this full-height Pressable's hit rectangle.
-        styles.button,
-      ]}
-      testID={`tab-${label}`}
-    >
+    <>
       <Animated.View pointerEvents="none" style={iconStyle}>
         <View style={{ width: iconSize, height: iconSize }}>
           <Animated.View style={inactiveIconStyle}>
@@ -167,11 +126,18 @@ export function TabBarButton({
       >
         {label}
       </Animated.Text>
-    </Pressable>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Applied directly to Expo Router's own Pressable-backed `TabTrigger`.
+ *
+ * Exported so the production layout and the component harness exercise the
+ * same flex contract. Five triggers with `flex: 1` always divide the full row;
+ * labels can no longer collapse the navigation into a content-width cluster.
+ */
+export const tabBarTriggerStyles = StyleSheet.create({
   button: {
     flex: 1,
     minWidth: MIN_TOUCH_TARGET,
@@ -182,5 +148,9 @@ const styles = StyleSheet.create({
     paddingTop: TAB_BAR_OVERHANG + ROW_PADDING_TOP,
     paddingBottom: ROW_PADDING_BOTTOM,
     overflow: 'visible',
+  },
+  pressed: {
+    opacity: 0.78,
+    transform: [{ scale: PRESSED_SCALE }],
   },
 });

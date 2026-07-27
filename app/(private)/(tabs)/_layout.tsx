@@ -5,6 +5,7 @@ import {
   resolveActiveIndex,
   TabBar,
   TabBarButton,
+  tabBarTriggerStyles,
   TAB_BACK_BEHAVIOR,
   TAB_ITEMS,
 } from '@/components/navigation';
@@ -27,7 +28,19 @@ export default function TabsLayout() {
       <TabList asChild>
         <TabBar activeIndex={activeIndex}>
           {TAB_ITEMS.map((item, index) => (
-            <TabTrigger asChild href={item.href as Href} key={item.name} name={item.name}>
+            <TabTrigger
+              accessibilityLabel={item.label}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeIndex === index }}
+              href={item.href as Href}
+              key={item.name}
+              name={item.name}
+              style={({ pressed }) => [
+                tabBarTriggerStyles.button,
+                pressed && tabBarTriggerStyles.pressed,
+              ]}
+              testID={`tab-${item.label}`}
+            >
               <TabBarButton
                 Icon={item.Icon}
                 iconSize={item.iconSize}

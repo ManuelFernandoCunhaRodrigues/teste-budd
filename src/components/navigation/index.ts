@@ -1,6 +1,10 @@
 export { BackButton, type BackButtonProps } from './BackButton';
 export { TabBar, resolveActiveIndex, type TabBarProps } from './TabBar';
-export { TabBarButton, type TabBarButtonProps } from './TabBarButton';
+export {
+  TabBarButton,
+  tabBarTriggerStyles,
+  type TabBarButtonProps,
+} from './TabBarButton';
 export { buildTabBarPath, clampNotchCenter, tabCenter } from './tabBarGeometry';
 export {
   tabBarContentInsetFor,

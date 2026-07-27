@@ -156,6 +156,7 @@ export function TabBar({ activeIndex, children, style, ...props }: TabBarProps) 
         height={totalHeight}
         pointerEvents="none"
         style={styles.svg}
+        testID="tab-bar-surface"
         viewBox={`0 0 ${barWidth} ${totalHeight}`}
         width={barWidth}
       >

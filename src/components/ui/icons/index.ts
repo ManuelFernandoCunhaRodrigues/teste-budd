@@ -8,6 +8,8 @@ export {
   CalendarIcon,
   HeartIcon,
   TrashIcon,
+  MinusIcon,
+  PlusIcon,
   EditIcon,
   StarIcon,
   type StarIconProps,
