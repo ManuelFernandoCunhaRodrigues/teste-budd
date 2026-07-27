@@ -1,12 +1,13 @@
-import { Text, View } from 'react-native';
+import { Text, View, type GestureResponderEvent } from 'react-native';
 
 import { Avatar, Divider, RatingLabel, Touchable } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/ui/icons';
 import type { Bar } from '@/types/domain';
+import { formatRating, formatReviewCount, ratingQualityLabel } from '@/utils/rating';
 
 export interface BarInfoCardProps {
   bar: Bar;
-  onOpenReviews: () => void;
+  onOpenReviews: (event: GestureResponderEvent) => void;
 }
 
 /**
@@ -14,6 +15,10 @@ export interface BarInfoCardProps {
  * monogram badge, rating and service details.
  */
 export function BarInfoCard({ bar, onOpenReviews }: BarInfoCardProps) {
+  const quality = ratingQualityLabel(bar.rating);
+  const formattedRating = formatRating(bar.rating);
+  const formattedCount = formatReviewCount(bar.reviewsCount);
+
   return (
     <View className="relative mx-4 -mt-[34px] rounded-2xl border border-border bg-surface px-4.5 pb-1.5 pt-[42px]">
       <View className="absolute -top-[62px] left-0 right-0 items-center">
@@ -39,7 +44,7 @@ export function BarInfoCard({ bar, onOpenReviews }: BarInfoCardProps) {
 
       <Touchable
         accessibilityHint="Abre as avaliações do local"
-        accessibilityLabel={`Avaliação ${bar.rating}, ${bar.reviewsCount} avaliações`}
+        accessibilityLabel={`Avaliações. Nota ${formattedRating} de 5. ${formattedCount}${quality ? `. ${quality}` : ''}.`}
         accessibilityRole="button"
         className="flex-row items-center justify-between gap-2.5"
         feedback="none"
@@ -47,9 +52,9 @@ export function BarInfoCard({ bar, onOpenReviews }: BarInfoCardProps) {
       >
         <View className="flex-1 flex-row items-center gap-2">
           <RatingLabel className="font-extrabold" rating={bar.rating} />
-          <Text className="text-base text-text-muted">({bar.reviewsCount} avaliações)</Text>
+          <Text className="text-base text-text-muted">({formattedCount})</Text>
           <Text className="text-text-ghost">•</Text>
-          <Text className="text-base font-bold text-primary">Super</Text>
+          {quality ? <Text className="text-base font-bold text-primary">{quality}</Text> : null}
         </View>
         <ChevronRightIcon />
       </Touchable>

@@ -1,10 +1,11 @@
 import { Text, View } from 'react-native';
 
 import { GradientImage, Touchable } from '@/components/ui';
-import { FlameIcon, MapPinIcon } from '@/components/ui/icons';
+import { FlameIcon, MapPinIcon, StarIcon } from '@/components/ui/icons';
 import { colors, shadows } from '@/theme';
 import type { Place } from '@/types/domain';
 import { cn } from '@/utils/cn';
+import { formatRating } from '@/utils/rating';
 
 export interface PlaceCardProps {
   place: Place;
@@ -16,13 +17,14 @@ export interface PlaceCardProps {
 function labelForPlace(place: Place): {
   category: string;
   distance: string;
-  rating: string;
+  /** `null` when the venue has no score yet. */
+  rating: string | null;
   status: string;
 } {
   return {
     category: place.category ?? (place.target.type === 'bar' ? 'Bar' : 'Evento'),
     distance: place.distance ?? 'Distancia indisponivel',
-    rating: place.rating ? `★ ${place.rating}` : 'Sem nota',
+    rating: place.rating ? formatRating(place.rating) : null,
     status:
       place.isOpen === true
         ? 'Aberto agora'
@@ -44,7 +46,7 @@ export function PlaceCard({ place, onPress, width, selected = false }: PlaceCard
   return (
     <Touchable
       accessibilityHint="Abre os detalhes deste lugar"
-      accessibilityLabel={`${place.name}. ${labels.category}. ${labels.distance}. ${labels.rating}. ${labels.status}. ${place.address}`}
+      accessibilityLabel={`${place.name}. ${labels.category}. ${labels.distance}. ${labels.rating ? `Nota ${labels.rating} de 5` : 'Sem nota'}. ${labels.status}. ${place.address}`}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={cn(
@@ -98,9 +100,11 @@ export function PlaceCard({ place, onPress, width, selected = false }: PlaceCard
           <Text className="rounded-pill bg-surface-raised px-2.5 py-1 text-xs font-bold text-text-soft">
             {labels.distance}
           </Text>
-          <Text className="rounded-pill bg-surface-raised px-2.5 py-1 text-xs font-bold text-primary">
-            {labels.rating}
-          </Text>
+          {/* Vector star, not a glyph: see `StarIcon`. */}
+          <View className="flex-row items-center gap-1 rounded-pill bg-surface-raised px-2.5 py-1">
+            {labels.rating ? <StarIcon color={colors.primary} filled size={11} /> : null}
+            <Text className="text-xs font-bold text-primary">{labels.rating ?? 'Sem nota'}</Text>
+          </View>
           <Text
             className={cn(
               'rounded-pill border px-2.5 py-1 text-xs font-bold',

@@ -66,6 +66,10 @@ jest.mock('@/store/preferencesStore', () => ({
   __esModule: true,
   usePreferencesStore: mockFakeStore(true),
 }));
+jest.mock('@/features/bars/store/reviewsStore', () => ({
+  __esModule: true,
+  useReviewsStore: mockFakeStore(true),
+}));
 
 const {
   bootstrapApplication,
@@ -235,17 +239,23 @@ describe('withTimeout', () => {
 });
 
 describe('store hydration', () => {
-  it('waits for a store that has not hydrated yet', async () => {
-    jest.resetModules();
-    jest.doMock('@/store/cartStore', () => ({
-      __esModule: true,
-      useCartStore: mockFakeStore(false, 120),
-    }));
+  it(
+    'waits for a store that has not hydrated yet',
+    async () => {
+      jest.resetModules();
+      jest.doMock('@/store/cartStore', () => ({
+        __esModule: true,
+        useCartStore: mockFakeStore(false, 120),
+      }));
 
-    const fresh = require('../bootstrap') as typeof import('../bootstrap');
-    fresh.resetBootstrapForTests();
+      const fresh = require('../bootstrap') as typeof import('../bootstrap');
+      fresh.resetBootstrapForTests();
 
-    // Resolving at all proves the hydration listener fired; hanging would time out.
-    await expect(fresh.hydrateRequiredStores()).resolves.toBeDefined();
-  });
+      // Resolving at all proves the hydration listener fired; hanging would time out.
+      await expect(fresh.hydrateRequiredStores()).resolves.toBeDefined();
+    },
+    // Requiring a fresh Expo/React Native graph is the expensive part of this
+    // test. Keep the allowance local so a slow unit elsewhere still fails fast.
+    15_000,
+  );
 });

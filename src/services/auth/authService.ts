@@ -25,8 +25,11 @@ export function validateCredentials(credentials: SignInCredentials): {
   if (!email) errors.email = 'Informe seu e-mail.';
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) errors.email = 'E-mail inválido.';
 
+  // Presence only. A minimum length is a *registration* rule: on sign-in the
+  // server decides, and rejecting a short password here would lock out any
+  // account whose password predates the rule while proving nothing about the
+  // ones it lets through.
   if (!credentials.password) errors.password = 'Informe sua senha.';
-  else if (credentials.password.length < 8) errors.password = 'A senha tem no mínimo 8 caracteres.';
 
   return errors;
 }

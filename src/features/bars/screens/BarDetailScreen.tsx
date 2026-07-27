@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View, type GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback';
+import { useTabBarHeight } from '@/components/navigation';
 import { ROUTES } from '@/constants/routes';
 import {
   buildMenuCategories,
@@ -32,6 +33,7 @@ export interface BarDetailScreenProps {
 /** Venue detail: cover, summary, coupons, in-house events and the full menu. */
 export function BarDetailScreen({ barId }: BarDetailScreenProps) {
   const router = useRouter();
+  const tabBarHeight = useTabBarHeight();
   const { data: bar, status, error, reload } = useBar(barId);
   const eventIdsKey = bar?.eventIds.join(',') ?? '';
   const { data: venueEvents, status: venueEventsStatus } = useAsyncData<Event[]>(
@@ -41,6 +43,7 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
 
   const [categoryId, setCategoryId] = useState<string>(FEATURED_CATEGORY_ID);
   const [reviewsVisible, setReviewsVisible] = useState(false);
+  const [reviewsTriggerHandle, setReviewsTriggerHandle] = useState<number | null>(null);
 
   const favoriteIds = useFavoritesStore((state) => state.barIds);
   const toggleFavorite = useFavoritesStore((state) => state.toggle);
@@ -60,24 +63,37 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
   const showFeatured = categoryId === FEATURED_CATEGORY_ID;
 
   if (status === 'loading' || status === 'idle') {
-    return <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />;
+    return (
+      <View className="flex-1 bg-bg" style={{ paddingBottom: tabBarHeight }}>
+        <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />
+      </View>
+    );
   }
 
   if (status === 'error' || !bar) {
     return (
-      <SafeAreaView className="flex-1 bg-bg">
+      <SafeAreaView
+        className="flex-1 bg-bg"
+        edges={['top']}
+        style={{ paddingBottom: tabBarHeight }}
+      >
         <ErrorState description={error?.message} onRetry={reload} />
       </SafeAreaView>
     );
   }
 
   const openEvent = (event: Event) => router.push(ROUTES.event(event.id));
+  const openReviews = (event: GestureResponderEvent) => {
+    const target = Number(event.nativeEvent.target);
+    setReviewsTriggerHandle(Number.isFinite(target) ? target : null);
+    setReviewsVisible(true);
+  };
 
   return (
     // Everything below sells on behalf of this venue, so the id and name travel
     // with each add instead of the cart store guessing an origin.
     <CatalogVenueProvider venue={{ id: bar.id, name: bar.name }}>
-    <View className="flex-1 bg-bg">
+    <View className="flex-1 bg-bg" style={{ paddingBottom: tabBarHeight }}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <BarCover
           barName={bar.name}
@@ -86,7 +102,7 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
           onToggleFavorite={() => toggleFavorite(bar.id)}
         />
 
-        <BarInfoCard bar={bar} onOpenReviews={() => setReviewsVisible(true)} />
+        <BarInfoCard bar={bar} onOpenReviews={openReviews} />
 
         <View className="pt-4">
           <CouponsRow coupons={bar.coupons} />
@@ -101,7 +117,7 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
           </Text>
           {venueEventsStatus === 'error' ? (
             <Text className="px-4 text-sm text-text-muted">
-              Eventos do local indisponiveis no momento.
+              Eventos do local indisponíveis no momento.
             </Text>
           ) : (
             <VenueEventsCarousel events={venueEvents ?? []} onSelect={openEvent} />
@@ -140,16 +156,21 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
       </ScrollView>
 
       {cartCount > 0 ? (
-        <SafeAreaView edges={['bottom']}>
+        <View>
           <CartBar
             itemCount={cartCount}
             onPress={() => router.push('/products')}
             subtotalInCents={cartSubtotalInCents}
           />
-        </SafeAreaView>
+        </View>
       ) : null}
 
-      <ReviewsSheet bar={bar} onClose={() => setReviewsVisible(false)} visible={reviewsVisible} />
+      <ReviewsSheet
+        bar={bar}
+        onClose={() => setReviewsVisible(false)}
+        restoreFocusTarget={reviewsTriggerHandle}
+        visible={reviewsVisible}
+      />
     </View>
     </CatalogVenueProvider>
   );

@@ -9,6 +9,8 @@ export {
   HeartIcon,
   TrashIcon,
   EditIcon,
+  StarIcon,
+  type StarIconProps,
   StarOutlineIcon,
   CouponIcon,
   TicketIcon,

@@ -26,4 +26,4 @@ export const backend: BackendPort = IMPLEMENTATIONS[backendMode];
 export const isDevBackendActive = backendMode === 'dev';
 
 export type { BackendMode, BackendPort } from './backendTypes';
-export { devBackendControls } from './devBackend';
+export { DEV_CREDENTIALS, devBackendControls } from './devBackend';

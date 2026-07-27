@@ -19,6 +19,7 @@ export function Toast() {
 
   return (
     <Animated.View
+      accessible
       accessibilityLiveRegion="polite"
       accessibilityRole="alert"
       entering={FadeInDown.duration(250)}

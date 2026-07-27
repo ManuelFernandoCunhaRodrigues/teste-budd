@@ -16,6 +16,14 @@ export interface TouchableProps extends Omit<PressableProps, 'style'> {
    * `card` mirrors `.bud-card` (subtle 0.98) for large tappable surfaces.
    */
   feedback?: PressFeedback;
+  /**
+   * Whether a disabled control should inherit the generic 45% opacity.
+   *
+   * Composite controls such as `Button` provide their own contrast-safe
+   * disabled colours and must opt out; otherwise the extra opacity blends both
+   * colours into the page and makes the label unreadable.
+   */
+  dimWhenDisabled?: boolean;
   /** Merged underneath the press transform. */
   style?: StyleProp<ViewStyle>;
 }
@@ -37,12 +45,13 @@ export function Touchable({
   className,
   feedback = 'press',
   disabled,
+  dimWhenDisabled = true,
   style,
   ...props
 }: TouchableProps) {
   return (
     <Pressable
-      className={cn(className, disabled && 'opacity-45')}
+      className={cn(className, disabled && dimWhenDisabled && 'opacity-[0.45]')}
       disabled={disabled}
       style={({ pressed }) => [
         style,

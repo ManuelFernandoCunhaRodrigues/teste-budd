@@ -83,7 +83,7 @@ export const unavailableBackend: BackendPort = {
     Promise.reject(
       unavailableError(
         'submitReview',
-        'Nao foi possivel publicar sua avaliacao agora. O rascunho ficou salvo para tentar novamente.',
+        'Não foi possível publicar sua avaliação agora. O rascunho ficou salvo para tentar novamente.',
       ),
     ),
 };

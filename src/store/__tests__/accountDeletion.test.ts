@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 import { resetAuthStorageForTests } from '@/services/auth/authStorage';
+import { DEV_CREDENTIALS } from '@/services/backend';
 import { AppError } from '@/services/errors';
 
 import { useCartStore } from '../cartStore';
@@ -16,7 +17,7 @@ import { useWalletStore } from '../walletStore';
  * The rule under test throughout: the device may only clear itself *after* the
  * server confirmed. A refusal must leave the account and the session untouched.
  */
-const VALID = { email: 'demo@budd.app', password: 'budd1234' };
+const VALID = { email: DEV_CREDENTIALS.email, password: DEV_CREDENTIALS.password };
 
 function clearSecureStore() {
   (SecureStore as unknown as { __reset: () => void }).__reset();

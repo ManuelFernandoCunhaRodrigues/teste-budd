@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } fro
 import { Screen } from '@/components/layout';
 import { Avatar, Button, Touchable } from '@/components/ui';
 import { BuddLogo } from '@/components/ui/icons';
-import { backendMode, isDevBackendActive } from '@/services/backend';
+import { backendMode, DEV_CREDENTIALS, isDevBackendActive } from '@/services/backend';
 import { validateCredentials } from '@/services/auth/authService';
 import { useSessionStore } from '@/store/sessionStore';
 import { colors } from '@/theme';
@@ -28,8 +28,10 @@ export function LoginScreen() {
   const authError = useSessionStore((state) => state.authError);
   const clearAuthError = useSessionStore((state) => state.clearAuthError);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Prefilled while the in-memory dev backend is serving, so a reload is one tap
+  // from signed in. Against a real backend both fields start empty.
+  const [email, setEmail] = useState(isDevBackendActive ? DEV_CREDENTIALS.email : '');
+  const [password, setPassword] = useState(isDevBackendActive ? DEV_CREDENTIALS.password : '');
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
@@ -184,7 +186,7 @@ export function LoginScreen() {
           {/* Seeded credentials, shown only while the in-memory dev backend is on. */}
           {isDevBackendActive ? (
             <Text className="mt-4 text-center text-xs text-text-dim">
-              [dev] demo@budd.app / budd1234
+              [dev] {DEV_CREDENTIALS.email} / {DEV_CREDENTIALS.password}
             </Text>
           ) : null}
         </ScrollView>

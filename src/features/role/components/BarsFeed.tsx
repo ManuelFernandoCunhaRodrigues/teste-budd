@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, View } from 'react-native';
 
 import { EmptyState, ErrorState } from '@/components/feedback';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
+import { useTabBarContentInset } from '@/components/navigation';
 import { Skeleton } from '@/components/ui';
 import { EmptyHeartIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
@@ -30,6 +30,7 @@ export interface BarsFeedProps {
  */
 export function BarsFeed({ header }: BarsFeedProps) {
   const router = useRouter();
+  const tabBarInset = useTabBarContentInset();
   const [query, setQuery] = useState('');
   const { data: bars, status, error, reload } = useBars(query);
 
@@ -77,7 +78,7 @@ export function BarsFeed({ header }: BarsFeedProps) {
         </>
       }
       contentContainerClassName="gap-3.5 px-4 pb-2 pt-2"
-      contentContainerStyle={{ paddingBottom: TAB_BAR_CONTENT_INSET }}
+      contentContainerStyle={{ paddingBottom: tabBarInset }}
       data={status === 'success' ? bars : []}
       // Keeps the search field usable without an extra dismiss tap.
       keyboardShouldPersistTaps="handled"

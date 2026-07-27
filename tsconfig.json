@@ -7,7 +7,10 @@
     },
     // `jest` supplies the globals (`describe`, `it`, `expect`) used by the test
     // files, which `include` picks up alongside app code.
-    "types": ["jest"]
+    // `node` is here for the encoding guard in `utils/__tests__/textIntegrity`,
+    // which shells out to `git grep` to scan the repository. Already present as a
+    // transitive dependency — nothing new is installed for it.
+    "types": ["jest", "node"]
   },
   "include": [
     "**/*.ts",

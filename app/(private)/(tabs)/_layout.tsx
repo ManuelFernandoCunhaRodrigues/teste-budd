@@ -1,7 +1,13 @@
+import { usePathname, type Href } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
-import type { Href } from 'expo-router';
 
-import { TabBar, TabBarButton, TAB_ITEMS } from '@/components/navigation';
+import {
+  resolveActiveIndex,
+  TabBar,
+  TabBarButton,
+  TAB_BACK_BEHAVIOR,
+  TAB_ITEMS,
+} from '@/components/navigation';
 
 /**
  * Bottom tab navigator.
@@ -11,15 +17,23 @@ import { TabBar, TabBarButton, TAB_ITEMS } from '@/components/navigation';
  * standard tab bar's options.
  */
 export default function TabsLayout() {
+  const pathname = usePathname();
+  const activeIndex = resolveActiveIndex(pathname);
+
   return (
-    <Tabs>
+    <Tabs options={{ backBehavior: TAB_BACK_BEHAVIOR }}>
       <TabSlot />
 
       <TabList asChild>
-        <TabBar>
-          {TAB_ITEMS.map((item) => (
+        <TabBar activeIndex={activeIndex}>
+          {TAB_ITEMS.map((item, index) => (
             <TabTrigger asChild href={item.href as Href} key={item.name} name={item.name}>
-              <TabBarButton Icon={item.Icon} iconSize={item.iconSize} label={item.label} />
+              <TabBarButton
+                Icon={item.Icon}
+                iconSize={item.iconSize}
+                isActive={activeIndex === index}
+                label={item.label}
+              />
             </TabTrigger>
           ))}
         </TabBar>

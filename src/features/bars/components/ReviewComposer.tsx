@@ -1,7 +1,11 @@
 import { Text, TextInput, View } from 'react-native';
 
 import { Button, StarRating } from '@/components/ui';
-import { REVIEW_TEXT_LIMIT, type ReviewPublicationStatus } from '@/domain/reviews/reviewTypes';
+import {
+  REVIEW_TEXT_LIMIT,
+  REVIEW_TEXT_MINIMUM,
+  type ReviewPublicationStatus,
+} from '@/domain/reviews/reviewTypes';
 import { colors } from '@/theme';
 
 export interface ReviewComposerProps {
@@ -15,6 +19,9 @@ export interface ReviewComposerProps {
   onDiscard?: () => void;
 }
 
+/** Shows the counter only once the limit is close enough to matter. */
+const COUNTER_VISIBLE_FROM = REVIEW_TEXT_LIMIT - 80;
+
 /** Star picker plus free-text field for leaving a review. */
 export function ReviewComposer({
   stars,
@@ -27,55 +34,81 @@ export function ReviewComposer({
   onDiscard,
 }: ReviewComposerProps) {
   const isSubmitting = status === 'submitting';
-  const hasDraftContent = stars > 0 || text.trim().length > 0;
-  const canSubmit = stars > 0 && text.trim().length > 0 && !isSubmitting;
+  const trimmed = text.trim();
+  const hasDraftContent = stars > 0 || trimmed.length > 0;
+
+  /**
+   * The product rule, stated in one place.
+   *
+   * Both a score and a few words are required — `validateReviewFields` enforces
+   * the same thing server-side, and the two must not disagree or the button
+   * enables into a guaranteed rejection.
+   */
+  const canSubmit = stars > 0 && trimmed.length >= REVIEW_TEXT_MINIMUM && !isSubmitting;
+
+  /** Says what is missing, rather than leaving a dead button unexplained. */
+  const requirementHint =
+    stars === 0
+      ? 'Escolha uma nota para continuar.'
+      : trimmed.length < REVIEW_TEXT_MINIMUM
+        ? 'Escreva algumas palavras sobre sua experiência.'
+        : null;
 
   const helper =
     errorMessage ??
-    (status === 'submitting'
-      ? 'Enviando avaliacao...'
-      : hasDraftContent && status === 'draft'
-        ? 'Rascunho salvo neste aparelho.'
-        : null);
+    (isSubmitting
+      ? 'Enviando avaliação…'
+      : (requirementHint ??
+        (hasDraftContent && status === 'draft' ? 'Rascunho salvo neste aparelho.' : null)));
 
   const buttonLabel =
     status === 'failed'
       ? 'Tentar novamente'
       : status === 'submitting'
-        ? 'Enviando...'
-        : 'Enviar avaliacao';
+        ? 'Enviando…'
+        : 'Enviar avaliação';
 
   return (
     <View className="rounded-xl border border-border bg-surface p-4">
-      <Text className="text-md font-extrabold text-text">Deixe sua avaliacao</Text>
+      <Text className="text-md font-extrabold text-text">Deixe sua avaliação</Text>
 
       <StarRating
-        className="mt-3"
+        className="mt-2"
         onChange={isSubmitting ? undefined : onChangeStars}
         value={stars}
       />
 
       <TextInput
-        accessibilityLabel="Conte como foi sua experiencia"
-        className="mt-3 min-h-[64px] rounded-md border border-border bg-surface-alt p-3 text-base text-text"
+        accessibilityHint={`Máximo de ${REVIEW_TEXT_LIMIT} caracteres.`}
+        accessibilityLabel="Conte como foi sua experiência"
+        className="mt-3 min-h-[88px] rounded-md border border-border bg-surface-alt p-3 text-base leading-6 text-text"
         editable={!isSubmitting}
         maxLength={REVIEW_TEXT_LIMIT}
         multiline
         onChangeText={onChangeText}
-        placeholder="Conte como foi sua experiencia..."
-        placeholderTextColor={colors.textDim}
+        placeholder="Conte como foi sua experiência…"
+        placeholderTextColor={colors.textMuted}
         textAlignVertical="top"
         value={text}
       />
 
-      <View className="mt-2 flex-row items-center justify-between gap-3">
-        <Text
-          className={errorMessage ? 'flex-1 text-sm text-danger' : 'flex-1 text-sm text-text-dim'}
-        >
-          {helper}
-        </Text>
-        {text.length > REVIEW_TEXT_LIMIT - 80 ? (
-          <Text className="text-xs text-text-dim">
+      <View className="mt-2 flex-row items-start justify-between gap-3">
+        {helper ? (
+          <Text
+            accessibilityLiveRegion={errorMessage ? 'assertive' : 'polite'}
+            className={
+              errorMessage ? 'flex-1 text-sm leading-5 text-danger-alt' : 'flex-1 text-sm leading-5 text-text-muted'
+            }
+            role={errorMessage ? 'alert' : undefined}
+          >
+            {helper}
+          </Text>
+        ) : (
+          <View className="flex-1" />
+        )}
+
+        {text.length > COUNTER_VISIBLE_FROM ? (
+          <Text className="text-xs text-text-muted">
             {text.length}/{REVIEW_TEXT_LIMIT}
           </Text>
         ) : null}

@@ -129,6 +129,36 @@ export function StarOutlineIcon({ size = 88, color = DEFAULT_ICON_COLOR }: IconP
   );
 }
 
+/** Path shared by the filled and outlined star, so the two always align. */
+const STAR_PATH = 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8L3.5 9.2l5.9-.9L12 3z';
+
+export interface StarIconProps extends IconProps {
+  /** Solid when true, outlined when false. */
+  filled?: boolean;
+}
+
+/**
+ * The star used by every rating in the app.
+ *
+ * Vector, never a glyph. A star character in a string renders differently per
+ * font and platform, and — as this project found the hard way — survives exactly
+ * one mis-encoded file save before turning into three unrelated symbols on
+ * screen. An SVG path has no such failure mode.
+ */
+export function StarIcon({ size = 20, color = DEFAULT_ICON_COLOR, filled = true }: StarIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d={STAR_PATH}
+        fill={filled ? color : 'none'}
+        stroke={color}
+        strokeLinejoin="round"
+        strokeWidth={filled ? 0 : 1.5}
+      />
+    </Svg>
+  );
+}
+
 export function CouponIcon({ size = 18, color = DEFAULT_ICON_COLOR }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen } from '@/components/layout';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
+import { useTabBarContentInset } from '@/components/navigation';
 import { ARTISTS } from '@/mocks/artists';
 import { loadingDelay } from '@/theme';
 import type { Artist } from '@/types/domain';
@@ -13,6 +13,7 @@ import { ArtistSheet } from '../components/ArtistSheet';
 
 /** Artist line-up: an avatar rail above a two-column card grid. */
 export function LineupScreen() {
+  const tabBarInset = useTabBarContentInset();
   const [loadingArtistId, setLoadingArtistId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Artist | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,7 +45,7 @@ export function LineupScreen() {
   return (
     <>
       <Screen
-        contentContainerStyle={{ paddingBottom: TAB_BAR_CONTENT_INSET }}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}
         contentClassName="pt-3.5"
         scroll
       >

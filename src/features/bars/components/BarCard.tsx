@@ -4,6 +4,7 @@ import { Badge, Card, GradientImage, RatingLabel } from '@/components/ui';
 import { MapPinIcon } from '@/components/ui/icons';
 import { colors } from '@/theme';
 import type { Bar } from '@/types/domain';
+import { formatRating } from '@/utils/rating';
 
 export interface BarCardProps {
   bar: Bar;
@@ -14,7 +15,7 @@ export interface BarCardProps {
 export function BarCard({ bar, onPress }: BarCardProps) {
   return (
     <Card
-      accessibilityLabel={`${bar.name}, ${bar.category}, avaliação ${bar.rating}, ${bar.distance}`}
+      accessibilityLabel={`${bar.name}, ${bar.category}, avaliação ${formatRating(bar.rating)}, ${bar.distance}`}
       className="min-h-[132px] flex-row"
       onPress={onPress}
     >

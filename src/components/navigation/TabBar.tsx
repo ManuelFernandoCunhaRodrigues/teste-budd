@@ -1,113 +1,167 @@
-import { usePathname } from 'expo-router';
-import { View, useWindowDimensions, type ViewProps } from 'react-native';
+import { useCallback, useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+  type ViewProps,
+} from 'react-native';
 import Animated, {
   useAnimatedProps,
   useAnimatedStyle,
   useDerivedValue,
+  useReducedMotion,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import { colors, duration, shadows } from '@/theme';
+import { colors, duration, shadows, zIndex } from '@/theme';
 
-import { TAB_BAR_HEIGHT, TAB_ITEMS } from './tabs.config';
+import { buildTabBarPath, clampNotchCenter, tabCenter } from './tabBarGeometry';
+import {
+  CENTER_BUTTON_SIZE,
+  CENTER_TAB_INDEX,
+  INDICATOR_CENTER_OFFSET,
+  TAB_BAR_BOTTOM_GAP,
+  TAB_BAR_HEIGHT,
+  TAB_BAR_HORIZONTAL_MARGIN,
+  TAB_BAR_OVERHANG,
+  TAB_ITEMS,
+} from './tabs.config';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-/** Radius of the concave notch, matching the 56pt indicator plus a ~6pt ring. */
-const NOTCH_RADIUS = 34;
-/** Vertical centre of the notch arc, relative to the bar's flat top edge. */
-const NOTCH_CENTER_Y = 8;
-/** Y of the flat bar top within the SVG viewBox. */
-const BAR_TOP = 6;
-const SVG_HEIGHT = 90;
-const INDICATOR_SIZE = 56;
-
 /**
- * Builds the bar outline with a concave notch centred on the active tab.
+ * Resolves the active tab from a pathname.
  *
- * Runs as a worklet so the path is recomputed on the UI thread every frame
- * while the notch slides, rather than round-tripping through JS.
+ * Each tab declares every public path it owns. Matching is segment-aware, so
+ * `/bar/123` belongs to Rolê while `/barista` does not. Returns -1 when nothing
+ * matches — the caller decides what that means rather than silently falling
+ * back to tab 0.
  */
-function buildNotchPath(center: number, width: number): string {
-  'worklet';
-  // Where the arc meets the flat top edge.
-  const halfChord = Math.sqrt(
-    NOTCH_RADIUS * NOTCH_RADIUS - (NOTCH_CENTER_Y - BAR_TOP) * (NOTCH_CENTER_Y - BAR_TOP),
-  );
-  const left = center - halfChord;
-  const right = center + halfChord;
+export function resolveActiveIndex(pathname: string): number {
+  const normalizedPath =
+    pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
-  return (
-    `M0,${BAR_TOP} H${(left - 12).toFixed(1)} ` +
-    // 12pt fillets ease the flat edge into the arc.
-    `Q${(left - 2).toFixed(1)},${BAR_TOP} ${left.toFixed(1)},9 ` +
-    `A${NOTCH_RADIUS},${NOTCH_RADIUS} 0 0 0 ${right.toFixed(1)},9 ` +
-    `Q${(right + 2).toFixed(1)},${BAR_TOP} ${(right + 12).toFixed(1)},${BAR_TOP} ` +
-    `H${width} V${SVG_HEIGHT} H0 Z`
+  return TAB_ITEMS.findIndex((tab) =>
+    tab.activePathPrefixes.some(
+      (prefix) =>
+        normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
+    ),
   );
 }
 
 export interface TabBarProps extends ViewProps {
+  /** Single route-derived index shared by the notch and all tab buttons. */
+  activeIndex: number;
   children: React.ReactNode;
 }
 
 /**
- * Custom bottom navigation: a dark bar whose notch and green indicator slide to
- * the active tab.
+ * Custom bottom navigation: a floating dark bar whose notch and green indicator
+ * slide to the active tab.
  *
  * Rendered through `<TabList asChild>`, so `children` are the `TabTrigger`
  * elements and this component supplies all of the chrome around them.
+ *
+ * Two things are load-bearing and easy to undo by accident:
+ *
+ * 1. The actual layout box includes the raised indicator overhang, bar body and
+ *    bottom safe-area inset. The whole visible control is therefore inside its
+ *    hit-test parent instead of drawing an untappable half-circle outside it.
+ * 2. The notch and the indicator both read their x from `clampNotchCenter`, so
+ *    there is no arrangement in which the circle sits off the curve.
+ * 3. The bar is absolute. Tab screens reserve this same total through
+ *    `useTabBarContentInset`; the navigator itself must not consume it again.
  */
-export function TabBar({ children, style, ...props }: TabBarProps) {
-  const { width } = useWindowDimensions();
+export function TabBar({ activeIndex, children, style, ...props }: TabBarProps) {
+  const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
 
-  // Derive the active tab from the URL so the chrome stays correct on deep
-  // links and back navigation, not just on taps.
-  const activeIndex = Math.max(
-    0,
-    TAB_ITEMS.findIndex((tab) => pathname.startsWith(tab.href)),
-  );
+  // Measured rather than assumed, so the path stays correct if a parent ever
+  // adds padding, and re-solves itself on rotation.
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const fallbackWidth = Math.max(0, windowWidth - TAB_BAR_HORIZONTAL_MARGIN * 2);
+  const barWidth = measuredWidth || fallbackWidth;
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const next = event.nativeEvent.layout.width;
+    setMeasuredWidth((current) => (Math.abs(current - next) > 0.5 ? next : current));
+  }, []);
+
+  const hasActiveTab = activeIndex >= 0 && activeIndex < TAB_ITEMS.length;
+  // With no matching route the notch rests under ROLÊ and the indicator hides,
+  // rather than marking a tab the user is not on.
+  const notchIndex = hasActiveTab ? activeIndex : CENTER_TAB_INDEX;
+
+  const barBodyHeight = TAB_BAR_HEIGHT + insets.bottom;
+  const totalHeight = TAB_BAR_OVERHANG + barBodyHeight;
 
   const progress = useDerivedValue(
-    () => withTiming(activeIndex, { duration: duration.enter }),
-    [activeIndex],
+    () =>
+      reduceMotion ? notchIndex : withTiming(notchIndex, { duration: duration.enter }),
+    [notchIndex, reduceMotion],
   );
 
-  const centerOf = (index: number) => ((index + 0.5) * width) / TAB_ITEMS.length;
-
   const pathProps = useAnimatedProps(() => ({
-    d: buildNotchPath(((progress.value + 0.5) * width) / TAB_ITEMS.length, width),
+    d: buildTabBarPath(tabCenter(progress.value, barWidth), barWidth, totalHeight),
   }));
 
   const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: hasActiveTab ? 1 : 0,
     transform: [
       {
         translateX:
-          ((progress.value + 0.5) * width) / TAB_ITEMS.length - INDICATOR_SIZE / 2,
+          clampNotchCenter(tabCenter(progress.value, barWidth), barWidth) -
+          CENTER_BUTTON_SIZE / 2,
       },
     ],
   }));
 
   return (
     <View
-      className="relative"
-      style={[{ height: TAB_BAR_HEIGHT, paddingBottom: insets.bottom }, style]}
       {...props}
+      accessibilityRole="tablist"
+      onLayout={handleLayout}
+      style={[
+        style,
+        styles.container,
+        {
+          bottom: TAB_BAR_BOTTOM_GAP,
+          height: totalHeight,
+          marginHorizontal: TAB_BAR_HORIZONTAL_MARGIN,
+        },
+      ]}
+      testID="tab-bar"
     >
+      {/* The system gesture/button region gets an opaque app background even
+          beside the floating bar's horizontal margins. */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.systemInsetUnderlay,
+          {
+            height: insets.bottom,
+            left: -TAB_BAR_HORIZONTAL_MARGIN,
+            right: -TAB_BAR_HORIZONTAL_MARGIN,
+          },
+        ]}
+        testID="tab-bar-system-underlay"
+      />
+
+      {/* Decorative: the full-height row below receives every touch. */}
       <Svg
-        height={SVG_HEIGHT}
-        preserveAspectRatio="none"
-        style={{ position: 'absolute', top: -8, left: 0 }}
-        viewBox={`0 0 ${width} ${SVG_HEIGHT}`}
-        width={width}
+        height={totalHeight}
+        pointerEvents="none"
+        style={styles.svg}
+        viewBox={`0 0 ${barWidth} ${totalHeight}`}
+        width={barWidth}
       >
         <AnimatedPath
           animatedProps={pathProps}
-          d={buildNotchPath(centerOf(activeIndex), width)}
+          d={buildTabBarPath(tabCenter(notchIndex, barWidth), barWidth, totalHeight)}
           fill={colors.surfaceNav}
         />
       </Svg>
@@ -117,19 +171,61 @@ export function TabBar({ children, style, ...props }: TabBarProps) {
         style={[
           {
             position: 'absolute',
-            top: -28,
+            top:
+              TAB_BAR_OVERHANG +
+              INDICATOR_CENTER_OFFSET -
+              CENTER_BUTTON_SIZE / 2,
             left: 0,
-            width: INDICATOR_SIZE,
-            height: INDICATOR_SIZE,
-            borderRadius: INDICATOR_SIZE / 2,
+            width: CENTER_BUTTON_SIZE,
+            height: CENTER_BUTTON_SIZE,
+            borderRadius: CENTER_BUTTON_SIZE / 2,
             backgroundColor: colors.primary,
           },
           shadows.navIndicator,
           indicatorStyle,
         ]}
+        testID="tab-bar-indicator"
       />
 
-      <View className="h-full flex-row items-start pt-3.5">{children}</View>
+      <View
+        pointerEvents="box-none"
+        style={[styles.row, { paddingBottom: insets.bottom }]}
+        testID="tab-bar-row"
+      >
+        {children}
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    overflow: 'visible',
+    zIndex: zIndex.nav,
+    elevation: zIndex.nav,
+  },
+  svg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  row: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  systemInsetUnderlay: {
+    position: 'absolute',
+    bottom: 0,
+    backgroundColor: colors.surfaceNav,
+  },
+});

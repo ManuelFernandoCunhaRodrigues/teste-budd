@@ -70,6 +70,10 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  // Loading blocks interaction but keeps the normal variant surface: the
+  // spinner colours were designed for that surface. Treating loading as the
+  // muted disabled palette made the primary spinner black on dark grey.
+  const usesDisabledPalette = !!disabled && !loading;
 
   return (
     <Touchable
@@ -82,10 +86,11 @@ export function Button({
         SIZE[size],
         fullWidth && 'w-full',
         // The design greys the whole control out rather than fading it.
-        isDisabled && variant === 'primary' && 'bg-surface-muted',
+        usesDisabledPalette && variant === 'primary' && 'bg-surface-muted',
         className,
       )}
       disabled={isDisabled}
+      dimWhenDisabled={!loading && variant !== 'primary'}
       {...props}
     >
       {loading ? (
@@ -98,7 +103,10 @@ export function Button({
               LABEL[variant],
               LABEL_SIZE[size],
               trailing ? 'flex-1' : '',
-              isDisabled && variant === 'primary' && 'text-text-faint',
+              // `text-muted` on `surface-muted`, not `text-faint`: the latter
+              // gave 2.1:1 against the disabled background, which is unreadable.
+              // This is 5.1:1 and still clearly reads as inactive.
+              usesDisabledPalette && variant === 'primary' && 'text-text-muted',
             )}
             numberOfLines={1}
           >

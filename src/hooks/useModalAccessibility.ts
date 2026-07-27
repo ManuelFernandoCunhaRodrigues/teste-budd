@@ -7,11 +7,21 @@ import { AccessibilityInfo, findNodeHandle, Text } from 'react-native';
  * Native modals render asynchronously; a short defer avoids trying to focus a
  * node before the host view exists.
  */
-export function useModalAccessibility(visible: boolean, announcement: string) {
+export function useModalAccessibility(
+  visible: boolean,
+  announcement: string,
+  restoreFocusTarget?: number | null,
+) {
   const titleRef = useRef<ComponentRef<typeof Text>>(null);
+  const wasVisible = useRef(false);
+  const lastRestoreTarget = useRef<number | null>(restoreFocusTarget ?? null);
 
   useEffect(() => {
     if (!visible) return;
+
+    if (restoreFocusTarget) {
+      lastRestoreTarget.current = restoreFocusTarget;
+    }
 
     const timer = setTimeout(() => {
       AccessibilityInfo.announceForAccessibility(announcement);
@@ -21,7 +31,24 @@ export function useModalAccessibility(visible: boolean, announcement: string) {
     }, 80);
 
     return () => clearTimeout(timer);
-  }, [announcement, visible]);
+  }, [announcement, restoreFocusTarget, visible]);
+
+  useEffect(() => {
+    const shouldRestore = wasVisible.current && !visible && lastRestoreTarget.current;
+    wasVisible.current = visible;
+
+    if (!shouldRestore) return;
+
+    // Wait for the native Modal host to be dismissed before moving focus back
+    // to the control on the underlying screen.
+    const timer = setTimeout(() => {
+      if (lastRestoreTarget.current) {
+        AccessibilityInfo.setAccessibilityFocus(lastRestoreTarget.current);
+      }
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [visible]);
 
   return titleRef;
 }

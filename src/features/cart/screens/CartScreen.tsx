@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
+import { useTabBarHeight } from '@/components/navigation';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Button } from '@/components/ui';
 import { EmptyBoxIcon } from '@/components/ui/icons';
@@ -23,6 +23,9 @@ import { CartSummary } from '../components/CartSummary';
 /** The order the user has assembled, ready for pickup checkout. */
 export function CartScreen() {
   const router = useRouter();
+  // A pinned footer, not scrolling content: it has to clear the bar exactly, so
+  // it uses the bar's real height rather than the looser content inset.
+  const tabBarHeight = useTabBarHeight();
 
   const items = useCartStore(selectCartItems);
   const venue = useCartStore(selectCartVenue);
@@ -108,7 +111,7 @@ export function CartScreen() {
             ) : null}
           </ScrollView>
 
-          <View style={{ paddingBottom: TAB_BAR_CONTENT_INSET - 40 }}>
+          <View style={{ paddingBottom: tabBarHeight }}>
             <CartSummary
               isSubmitting={checkout.status === 'submitting'}
               itemCount={itemCount}

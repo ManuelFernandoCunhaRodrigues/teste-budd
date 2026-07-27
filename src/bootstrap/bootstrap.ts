@@ -2,6 +2,7 @@ import { blockingIssues } from '@/config/environment.validation';
 import { validateEnvironment } from '@/config/environment';
 import { reportError } from '@/services/errors';
 import { healthcheckService, type HealthcheckResult } from '@/services/health/healthcheckService';
+import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 import { useCartStore } from '@/store/cartStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -90,6 +91,7 @@ export function hydrateRequiredStores(): Promise<void[]> {
     waitForHydration(useCartStore),
     waitForHydration(useFavoritesStore),
     waitForHydration(usePreferencesStore),
+    waitForHydration(useReviewsStore),
   ]);
 }
 

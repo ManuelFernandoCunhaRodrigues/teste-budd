@@ -12,6 +12,7 @@ import {
 import type { AuthenticatedUser } from '@/services/auth/authTypes';
 import { AppError, normalizeError, reportError } from '@/services/errors';
 import { createIdempotencyKey } from '@/utils/idempotency';
+import { isTextIntact } from '@/utils/textIntegrity';
 
 import { submitVenueReview } from '../services/reviewService';
 
@@ -62,7 +63,11 @@ interface ReviewsState {
   reset: () => void;
 }
 
-const REVIEWS_VERSION = 1;
+/**
+ * Bumped to 3 so persisted text is re-checked and an interrupted `submitting`
+ * record can be recovered as an editable retry on the next launch.
+ */
+const REVIEWS_VERSION = 3;
 const REVIEW_STATUSES: ReviewPublicationStatus[] = ['draft', 'submitting', 'published', 'failed'];
 
 type PersistedReviews = Pick<ReviewsState, 'reviews'>;
@@ -134,15 +139,58 @@ function isValidReview(value: unknown): value is LocalReview {
     typeof candidate.idempotencyKey === 'string' &&
     typeof candidate.createdAt === 'string' &&
     typeof candidate.updatedAt === 'string' &&
-    typeof candidate.stars === 'number' &&
-    REVIEW_STATUSES.includes(candidate.status as ReviewPublicationStatus)
+    Number.isInteger(candidate.stars) &&
+    (candidate.stars ?? -1) >= 0 &&
+    (candidate.stars ?? 6) <= 5 &&
+    (candidate.status !== 'published' || (candidate.stars ?? 0) >= 1) &&
+    REVIEW_STATUSES.includes(candidate.status as ReviewPublicationStatus) &&
+    // Text written by a build with a broken encoding is unreadable and cannot be
+    // recovered, so it does not count as valid.
+    isTextIntact(candidate.author, candidate.text, candidate.date, candidate.errorMessage)
   );
 }
 
-function isValidPersisted(value: unknown): value is PersistedReviews {
-  if (typeof value !== 'object' || value === null) return false;
-  const candidate = value as Partial<PersistedReviews>;
-  return Array.isArray(candidate.reviews) && candidate.reviews.every(isValidReview);
+/**
+ * Keeps the reviews that survive validation and drops the rest.
+ *
+ * Per-record rather than all-or-nothing: one review written by a build with a
+ * broken encoding should not cost the user every other review they left. The
+ * discarded ones are reported so a recurring source shows up in logs instead of
+ * disappearing quietly.
+ *
+ * Deliberately does not *repair* mojibake. The mangling is not reliably
+ * reversible, and a store that silently fixes bad text would hide the encoding
+ * fault that produced it.
+ */
+function keepValidReviews(value: unknown): LocalReview[] {
+  const candidate = (value as Partial<PersistedReviews> | null)?.reviews;
+  if (!Array.isArray(candidate)) return [];
+
+  const kept = candidate.filter(isValidReview).map(recoverInterruptedSubmission);
+
+  if (kept.length !== candidate.length) {
+    reportError(new Error('reviewsStore: discarded unreadable persisted reviews'), {
+      scope: 'reviewsStore.migrate',
+      discarded: String(candidate.length - kept.length),
+    });
+  }
+
+  return kept;
+}
+
+/**
+ * A process can be killed after persisting `submitting` but before the request
+ * resolves. On the next launch that state must be editable and retryable rather
+ * than becoming a permanent lock.
+ */
+function recoverInterruptedSubmission(review: LocalReview): LocalReview {
+  if (review.status !== 'submitting') return review;
+
+  return {
+    ...review,
+    status: 'failed',
+    errorMessage: 'O envio anterior foi interrompido. Tente novamente.',
+  };
 }
 
 export const useReviewsStore = create<ReviewsState>()(
@@ -161,8 +209,8 @@ export const useReviewsStore = create<ReviewsState>()(
             id: existing?.id ?? createIdempotencyKey('review-local'),
             venueId,
             userId,
-            author: authorName || 'Voce',
-            initial: toReviewInitial(authorName || 'Voce'),
+            author: authorName || 'Você',
+            initial: toReviewInitial(authorName || 'Você'),
             date: 'rascunho',
             stars: stars ?? existing?.stars ?? 0,
             text: text ?? existing?.text ?? '',
@@ -187,13 +235,13 @@ export const useReviewsStore = create<ReviewsState>()(
 
         if (!draft) {
           throw new AppError('validation', {
-            userMessage: 'Escreva sua avaliacao antes de enviar.',
+            userMessage: 'Escreva sua avaliação antes de enviar.',
             detail: 'reviewsStore.submitDraft: no draft',
           });
         }
 
         if (draft.status === 'submitting') {
-          return { status: 'submitting', message: 'Sua avaliacao ja esta sendo enviada.' };
+          return { status: 'submitting', message: 'Sua avaliação já está sendo enviada.' };
         }
 
         const validation = validateReviewFields(draft.stars, draft.text);
@@ -242,8 +290,8 @@ export const useReviewsStore = create<ReviewsState>()(
             review: published,
             message:
               result.backendMode === 'dev'
-                ? 'Avaliacao publicada no modo de demonstracao.'
-                : 'Avaliacao publicada.',
+                ? 'Avaliação publicada no modo de demonstração.'
+                : 'Avaliação publicada.',
           };
         } catch (error) {
           const normalized = normalizeError(error);
@@ -278,15 +326,27 @@ export const useReviewsStore = create<ReviewsState>()(
       version: REVIEWS_VERSION,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state): PersistedReviews => ({ reviews: state.reviews }),
-      migrate: (persisted, version) =>
-        version >= REVIEWS_VERSION && isValidPersisted(persisted) ? persisted : { reviews: [] },
+      // Filters instead of wiping: v1 could contain reviews written with a
+      // mis-encoded build, and dropping the whole array to remove one of them
+      // would take the user's good reviews with it.
+      migrate: (persisted) => ({ reviews: keepValidReviews(persisted) }),
       onRehydrateStorage: () => (state, error) => {
-        useReviewsStore.setState({ hasHydrated: true });
         if (error && __DEV__) console.warn('[reviews] failed to restore', error);
 
-        if (state && !isValidPersisted({ reviews: state.reviews })) {
-          useReviewsStore.setState({ reviews: [] });
+        if (!state) {
+          useReviewsStore.setState({ hasHydrated: true });
+          return;
         }
+
+        const normalized = keepValidReviews({ reviews: state.reviews });
+        const changed =
+          normalized.length !== state.reviews.length ||
+          normalized.some((review, index) => review !== state.reviews[index]);
+
+        useReviewsStore.setState({
+          hasHydrated: true,
+          ...(changed ? { reviews: normalized } : null),
+        });
       },
     },
   ),
@@ -305,6 +365,6 @@ export function selectVisibleReviewsForVenue(
   venueId: string,
 ): LocalReview[] {
   return state.reviews.filter(
-    (review) => review.venueId === venueId && review.status !== 'draft',
+    (review) => review.venueId === venueId && review.status === 'published',
   );
 }

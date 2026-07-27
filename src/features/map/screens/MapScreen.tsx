@@ -13,7 +13,7 @@ import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
 import { LoadingState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
+import { useTabBarContentInset } from '@/components/navigation';
 import { Button, IconButton } from '@/components/ui';
 import { MapPinIcon } from '@/components/ui/icons';
 import { DEFAULT_REGION } from '@/constants/app';
@@ -39,6 +39,7 @@ const CENTER_ANIMATION_MS = 600;
 /** Full-bleed map with venue pins and a snap carousel of place cards. */
 export function MapScreen() {
   const router = useRouter();
+  const tabBarInset = useTabBarContentInset();
   const { width } = useWindowDimensions();
   const ready = useDelayedFlag(loadingDelay.map);
   const location = useUserLocation();
@@ -57,7 +58,7 @@ export function MapScreen() {
   const cardWidth = width * 0.78;
   const gap = 12;
   const sidePadding = (width - cardWidth) / 2;
-  const carouselBottom = TAB_BAR_CONTENT_INSET + 10;
+  const carouselBottom = tabBarInset + 10;
 
   // Animating a map that is off-screen is wasted work and can land mid-transition.
   useFocusEffect(

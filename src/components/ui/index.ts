@@ -7,7 +7,14 @@ export { Divider } from './Divider';
 export { GradientImage, type GradientImageProps } from './GradientImage';
 export { IconButton, type IconButtonProps, type IconButtonVariant } from './IconButton';
 export { Skeleton } from './Skeleton';
-export { RatingLabel, StarRating, type StarRatingProps } from './StarRating';
+export {
+  RatingBadge,
+  RatingLabel,
+  StarRating,
+  type RatingBadgeProps,
+  type RatingLabelProps,
+  type StarRatingProps,
+} from './StarRating';
 export { Stepper, type StepperProps } from './Stepper';
 export { Toggle, type ToggleProps } from './Toggle';
 export { Touchable, type TouchableProps } from './Touchable';

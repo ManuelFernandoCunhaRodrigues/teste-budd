@@ -62,7 +62,8 @@ export interface Bar {
   category: string;
   /** Human-readable address line. */
   location: string;
-  rating: string;
+  /** Machine-readable average. Localisation belongs in the presentation layer. */
+  rating: number;
   /** Distance from the user, e.g. `"2.4 km"`. */
   distance: string;
   image: GradientToken;

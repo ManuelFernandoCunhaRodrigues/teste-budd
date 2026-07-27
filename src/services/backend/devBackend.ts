@@ -44,14 +44,26 @@ interface DevUser extends AuthenticatedUser {
   password: string;
 }
 
+/**
+ * The seeded demo account, exported so the login hint, `.env.example` and the
+ * tests all read the same pair instead of repeating a literal that then drifts.
+ *
+ * Reachable only through `devBackend`, which `config/environment` refuses to
+ * select outside `__DEV__` — these credentials cannot exist in a shipped build.
+ */
+export const DEV_CREDENTIALS = {
+  email: 'user@budd.com',
+  password: '123456',
+} as const;
+
 /** Seeded credentials. Documented in `.env.example`. */
 const USERS: DevUser[] = [
   {
     id: 'user-demo',
     name: 'Ana Souza',
-    email: 'demo@budd.app',
-    password: 'budd1234',
-    },
+    email: DEV_CREDENTIALS.email,
+    password: DEV_CREDENTIALS.password,
+  },
 ];
 
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 8;
@@ -788,7 +800,7 @@ export const devBackend: BackendPort = {
     const user = USERS.find((candidate) => candidate.id === input.userId);
     if (!user || db.deletedUserIds.has(user.id)) {
       throw new AppError('unauthenticated', {
-        userMessage: 'Entre novamente para publicar sua avaliacao.',
+        userMessage: 'Entre novamente para publicar sua avaliação.',
         detail: 'devBackend: review user is not active',
       });
     }
@@ -796,7 +808,7 @@ export const devBackend: BackendPort = {
     const venue = findBarById(input.venueId);
     if (!venue) {
       throw new AppError('not_found', {
-        userMessage: 'Nao encontramos este bar para publicar a avaliacao.',
+        userMessage: 'Não encontramos este bar para publicar a avaliação.',
         detail: `devBackend: venue ${input.venueId} not found`,
       });
     }

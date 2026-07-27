@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { FlatList, ScrollView, Text, View } from 'react-native';
 
 import { EmptyState, ErrorState } from '@/components/feedback';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
+import { useTabBarContentInset } from '@/components/navigation';
 import { Button, Chip, Skeleton } from '@/components/ui';
 import { StarOutlineIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
@@ -33,6 +33,7 @@ export interface EventsFeedProps {
  */
 export function EventsFeed({ header }: EventsFeedProps) {
   const router = useRouter();
+  const tabBarInset = useTabBarContentInset();
   const [filterId, setFilterId] = useState<EventFilterId>('all');
   const { data: events, status, error, reload } = useFeedEvents();
 
@@ -132,7 +133,7 @@ export function EventsFeed({ header }: EventsFeedProps) {
         </>
       }
       contentContainerClassName="gap-3.5 px-4 pb-2 pt-2"
-      contentContainerStyle={{ paddingBottom: TAB_BAR_CONTENT_INSET }}
+      contentContainerStyle={{ paddingBottom: tabBarInset }}
       // Emptied while the location filter cannot run, so no misleading list shows.
       data={status === 'success' && !needsLocation ? visibleEvents : []}
       keyExtractor={keyExtractor}

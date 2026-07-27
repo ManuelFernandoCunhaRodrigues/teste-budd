@@ -3,15 +3,17 @@ import * as SecureStore from 'expo-secure-store';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 import { resetAuthStorageForTests } from '@/services/auth/authStorage';
+import { DEV_CREDENTIALS } from '@/services/backend';
 
 import { resetSessionLatchForTests, useSessionStore } from '../sessionStore';
 
 /**
  * Authentication state (§17.1), against the in-memory dev backend.
  *
- * Credentials are the ones seeded in `devBackend`.
+ * Credentials come from `devBackend` itself, so reseeding the demo account
+ * cannot leave these cases asserting against a pair that no longer exists.
  */
-const VALID = { email: 'demo@budd.app', password: 'budd1234' };
+const VALID = { email: DEV_CREDENTIALS.email, password: DEV_CREDENTIALS.password };
 
 /** Test-only helper installed by the `expo-secure-store` mock. */
 function clearSecureStore() {

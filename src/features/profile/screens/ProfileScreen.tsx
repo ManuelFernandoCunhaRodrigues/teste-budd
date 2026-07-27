@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 
 import { ConfirmDialog } from '@/components/feedback';
 import { Screen } from '@/components/layout';
-import { TAB_BAR_CONTENT_INSET } from '@/components/navigation';
+import { useTabBarContentInset } from '@/components/navigation';
 import { IconButton, Touchable } from '@/components/ui';
 import { EditIcon, MapPinIcon, TrashIcon } from '@/components/ui/icons';
 import { CURRENT_USER } from '@/mocks/profile';
@@ -22,6 +22,7 @@ import { useProfileMenu } from '../hooks/useProfileMenu';
 /** Account hub: stats, navigation menu and destructive account actions. */
 export function ProfileScreen() {
   const router = useRouter();
+  const tabBarInset = useTabBarContentInset();
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -76,7 +77,7 @@ export function ProfileScreen() {
   return (
     <>
       <Screen
-        contentContainerStyle={{ paddingBottom: TAB_BAR_CONTENT_INSET }}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}
         contentClassName="px-4 pt-2"
         scroll
       >
