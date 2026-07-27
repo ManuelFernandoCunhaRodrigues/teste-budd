@@ -33,7 +33,7 @@ export default function BootRoute() {
   if (bootstrap.status !== 'ready' || status === 'checking') {
     return (
       <Screen edges={['top', 'bottom']}>
-        <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />
+        <LoadingState variant="role" />
       </Screen>
     );
   }

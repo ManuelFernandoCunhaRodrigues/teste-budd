@@ -20,7 +20,12 @@ import type {
 } from '@/domain/wallet/walletTypes';
 import { findBarById, findVenueProduct } from '@/mocks/bars';
 import { EVENTS } from '@/mocks/events';
-import type { AuthenticatedUser, SignInCredentials, SignInResponse } from '@/services/auth/authTypes';
+import type {
+  AuthenticatedUser,
+  SignInCredentials,
+  SignInResponse,
+  SignUpInput,
+} from '@/services/auth/authTypes';
 import { AppError } from '@/services/errors';
 import { multiplyCents, sumCents, type MoneyInCents } from '@/utils/money';
 
@@ -384,6 +389,41 @@ export const devBackend: BackendPort = {
         detail: 'devBackend: credential mismatch',
       });
     }
+
+    const accessToken = nextId('tok');
+    const expiresAtMs = Date.now() + TOKEN_TTL_MS;
+    db.tokens.set(accessToken, { userId: user.id, expiresAt: expiresAtMs });
+
+    return {
+      accessToken,
+      expiresAt: new Date(expiresAtMs).toISOString(),
+      user: { id: user.id, name: user.name, email: user.email },
+    };
+  },
+
+  /**
+   * Registers an account in memory and signs it straight in.
+   *
+   * Development data: the user lives in `USERS` for this process only and is
+   * gone on reload. Everything a real server would enforce is enforced here —
+   * a duplicate address is refused rather than quietly overwriting the account
+   * that already owns it.
+   */
+  async signUp(input: SignUpInput): Promise<SignInResponse> {
+    await latency();
+
+    const email = input.email.trim().toLowerCase();
+    const name = input.name.trim();
+
+    if (USERS.some((candidate) => candidate.email === email)) {
+      throw new AppError('validation', {
+        userMessage: 'Já existe uma conta com esse e-mail.',
+        detail: 'devBackend: duplicate email on signUp',
+      });
+    }
+
+    const user = { id: nextId('usr'), name, email, password: input.password };
+    USERS.push(user);
 
     const accessToken = nextId('tok');
     const expiresAtMs = Date.now() + TOKEN_TTL_MS;

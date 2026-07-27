@@ -31,7 +31,7 @@ export function OrderStatusScreen({ orderId }: OrderStatusScreenProps) {
     return (
       <Screen>
         <ScreenHeader backFallbackHref="/role" title="Seu pedido" />
-        <LoadingState description="Buscando seu pedido…" title="Carregando" />
+        <LoadingState label="Carregando seu pedido" variant="profile" />
       </Screen>
     );
   }

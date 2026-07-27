@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { EmptyState, ErrorState } from '@/components/feedback';
+import { EmptyState, ErrorState, SkeletonList } from '@/components/feedback';
 import { Screen, ScreenHeader } from '@/components/layout';
-import { IconButton, Skeleton } from '@/components/ui';
+import { IconButton } from '@/components/ui';
 import { EmptyHeartIcon, HeartIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
 import { BarCard } from '@/features/bars';
@@ -30,10 +30,7 @@ export function FavoritesScreen() {
 
       <View className="gap-3.5 px-4.5 pt-1.5">
         {status === 'loading' ? (
-          <>
-            <Skeleton className="h-[132px] rounded-xl" />
-            <Skeleton className="h-[132px] rounded-xl" />
-          </>
+          <SkeletonList count={2} />
         ) : null}
 
         {status === 'error' ? (

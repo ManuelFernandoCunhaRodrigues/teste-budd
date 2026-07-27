@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, ScrollView, Text, View } from 'react-native';
 
-import { EmptyState, ErrorState } from '@/components/feedback';
+import { EmptyState, ErrorState, SkeletonList } from '@/components/feedback';
 import { useTabBarContentInset } from '@/components/navigation';
-import { Button, Chip, Skeleton } from '@/components/ui';
+import { Button, Chip } from '@/components/ui';
 import { StarOutlineIcon } from '@/components/ui/icons';
 import { ROUTES } from '@/constants/routes';
 import {
@@ -68,10 +68,7 @@ export function EventsFeed({ header }: EventsFeedProps) {
       ListEmptyComponent={
         <View className="gap-3.5 px-4 pt-2">
           {status === 'loading' ? (
-            <>
-              <Skeleton className="h-[140px] rounded-xl" />
-              <Skeleton className="h-[140px] rounded-xl" />
-            </>
+            <SkeletonList count={2} />
           ) : null}
 
           {status === 'error' ? (

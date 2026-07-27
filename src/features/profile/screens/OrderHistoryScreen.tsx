@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 
-import { EmptyState, ErrorState } from '@/components/feedback';
+import { EmptyState, ErrorState, SkeletonList } from '@/components/feedback';
 import { Screen, ScreenHeader } from '@/components/layout';
-import { IconButton, Skeleton } from '@/components/ui';
+import { IconButton } from '@/components/ui';
 import { CalendarHeaderIcon, EmptyBagIcon } from '@/components/ui/icons';
 import type { Order } from '@/domain/orders/orderTypes';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -81,8 +81,7 @@ export function OrderHistoryScreen() {
 
         {status === 'loading' ? (
           <View className="gap-3 pt-4">
-            <Skeleton className="h-[76px] rounded-xl" />
-            <Skeleton className="h-[76px] rounded-xl" />
+            <SkeletonList count={2} shape="profileRow" />
           </View>
         ) : null}
 

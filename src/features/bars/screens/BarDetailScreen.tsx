@@ -65,7 +65,7 @@ export function BarDetailScreen({ barId }: BarDetailScreenProps) {
   if (status === 'loading' || status === 'idle') {
     return (
       <View className="flex-1 bg-bg" style={{ paddingBottom: tabBarHeight }}>
-        <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />
+        <LoadingState variant="role" />
       </View>
     );
   }

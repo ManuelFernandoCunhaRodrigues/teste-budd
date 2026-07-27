@@ -27,7 +27,7 @@ export function RoleScreen() {
   if (!ready) {
     return (
       <Screen>
-        <LoadingState description="Buscando os melhores lugares…" title="Carregando rolês" />
+        <LoadingState variant="role" />
       </Screen>
     );
   }

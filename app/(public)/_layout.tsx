@@ -18,7 +18,7 @@ export default function PublicLayout() {
   if (status === 'checking') {
     return (
       <Screen edges={['top', 'bottom']}>
-        <LoadingState description="Verificando sua sessão…" title="Só um instante" />
+        <LoadingState label="Verificando sua sessão" variant="role" />
       </Screen>
     );
   }

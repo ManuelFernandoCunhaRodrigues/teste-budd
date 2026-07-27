@@ -11,6 +11,19 @@ export interface SignInCredentials {
 }
 
 /**
+ * What creating an account needs.
+ *
+ * The confirmation field never reaches here: matching two inputs is a form
+ * concern, and sending it would ask the server to re-check something the UI
+ * already guaranteed.
+ */
+export interface SignUpInput {
+  name: string;
+  email: string;
+  password: string;
+}
+
+/**
  * A session as held in memory.
  *
  * `expiresAt` lets the app reject a stale token locally on boot instead of

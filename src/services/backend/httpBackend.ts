@@ -16,7 +16,12 @@ import type {
 } from '@/domain/wallet/walletTypes';
 import { api } from '@/services/api/client';
 import { ENDPOINTS } from '@/services/api/endpoints';
-import type { AuthenticatedUser, SignInCredentials, SignInResponse } from '@/services/auth/authTypes';
+import type {
+  AuthenticatedUser,
+  SignInCredentials,
+  SignInResponse,
+  SignUpInput,
+} from '@/services/auth/authTypes';
 import { isValidSignInResponse } from '@/services/auth/authTypes';
 import { AppError, normalizeError } from '@/services/errors';
 
@@ -60,6 +65,23 @@ export const httpBackend: BackendPort = {
     // A malformed 200 must not be trusted as a session.
     if (!isValidSignInResponse(response)) {
       throw new AppError('unknown', { detail: 'signIn: unexpected response shape' });
+    }
+
+    return response satisfies SignInResponse;
+  },
+
+  async signUp(input: SignUpInput) {
+    const response = await guard('signUp', () =>
+      api.post<unknown>(ENDPOINTS.signUp, {
+        name: input.name,
+        email: input.email,
+        password: input.password,
+      }),
+    );
+
+    // A malformed 200 must not be trusted as a session, same as signIn.
+    if (!isValidSignInResponse(response)) {
+      throw new AppError('unknown', { detail: 'signUp: unexpected response shape' });
     }
 
     return response satisfies SignInResponse;

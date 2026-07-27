@@ -37,6 +37,13 @@ export const unavailableBackend: BackendPort = {
         'A autenticação está indisponível: o servidor ainda não foi configurado.',
       ),
     ),
+  signUp: () =>
+    Promise.reject(
+      unavailableError(
+        'signUp',
+        'O cadastro está indisponível: o servidor ainda não foi configurado.',
+      ),
+    ),
   fetchCurrentUser: () => Promise.reject(unavailableError('fetchCurrentUser')),
   /** Local sign-out must always succeed — the device can always forget a token. */
   signOut: () => Promise.resolve(),

@@ -12,6 +12,7 @@
 export const ROUTES = {
   boot: '/',
   login: '/login',
+  signup: '/signup',
 
   lineup: '/lineup',
   map: '/map',
