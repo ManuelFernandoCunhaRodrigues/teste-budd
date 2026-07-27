@@ -23,18 +23,34 @@ import { PLACES } from '@/mocks/places';
 import { colors, loadingDelay } from '@/theme';
 import type { Coordinate, Place } from '@/types/domain';
 
+import { carouselIndexAt, carouselOffsetFor } from '../carouselGeometry';
 import { PlaceCard } from '../components/PlaceCard';
 import { UserLocationMarker } from '../components/UserLocationMarker';
 import { VenueMarker } from '../components/VenueMarker';
 import { coordinateOrFallback, useUserLocation } from '../hooks/useUserLocation';
 
-/** Zoom applied when centring on the user — tighter than the city-wide default. */
-const USER_REGION_DELTA = {
+/**
+ * Zoom applied when centring on a single point — the user or a selected venue.
+ * Tighter than the city-wide default so the target is actually legible.
+ */
+const FOCUS_REGION_DELTA = {
   latitudeDelta: 0.02,
   longitudeDelta: 0.02,
 };
 
 const CENTER_ANIMATION_MS = 600;
+
+/**
+ * Stands in for the carousel's height only until it reports its own.
+ *
+ * The recenter button sits above the cards, so it needs a height one frame
+ * before `onLayout` delivers one. Every frame after the first uses the measured
+ * value — this number must never be the thing keeping them from overlapping.
+ */
+const ESTIMATED_CAROUSEL_HEIGHT = 324;
+
+/** Breathing room between the recenter button and the top card edge. */
+const RECENTER_GAP = 12;
 
 /** Full-bleed map with venue pins and a snap carousel of place cards. */
 export function MapScreen() {
@@ -45,7 +61,10 @@ export function MapScreen() {
   const location = useUserLocation();
   const [selectedPlaceIndex, setSelectedPlaceIndex] = useState(0);
 
+  const [carouselHeight, setCarouselHeight] = useState(0);
+
   const mapRef = useRef<MapView>(null);
+  const carouselRef = useRef<ScrollView>(null);
   /**
    * Automatic centring happens once.
    *
@@ -55,8 +74,8 @@ export function MapScreen() {
   const hasCenteredOnUser = useRef(false);
   const isFocusedRef = useRef(true);
 
-  const cardWidth = width * 0.78;
-  const gap = 12;
+  const cardWidth = Math.min(width * 0.6, 236);
+  const gap = 14;
   const sidePadding = (width - cardWidth) / 2;
   const carouselBottom = tabBarInset + 10;
 
@@ -74,7 +93,7 @@ export function MapScreen() {
     if (!isFocusedRef.current) return;
 
     mapRef.current?.animateToRegion(
-      { ...coordinate, ...USER_REGION_DELTA },
+      { ...coordinate, ...FOCUS_REGION_DELTA },
       CENTER_ANIMATION_MS,
     );
   }, []);
@@ -99,12 +118,50 @@ export function MapScreen() {
     location.retry();
   }, [location, centerOn]);
 
+  /**
+   * Selects a place from the map side: highlights its card, brings it into view
+   * and moves the camera onto it.
+   *
+   * Tapping a pin deliberately previews rather than navigates. Opening the venue
+   * straight from the map gave the pin a different meaning from the card it
+   * belongs to, and left no way to look at a pin without leaving the map.
+   */
+  const focusPlace = useCallback(
+    (index: number) => {
+      const place = PLACES[index];
+      if (!place) return;
+
+      setSelectedPlaceIndex(index);
+      carouselRef.current?.scrollTo({
+        x: carouselOffsetFor(index, cardWidth, gap),
+        animated: true,
+      });
+      centerOn(place.coordinate);
+    },
+    [cardWidth, gap, centerOn],
+  );
+
+  /**
+   * Selects a place from the carousel side.
+   *
+   * Does not scroll the carousel: the gesture that triggered this already put
+   * the card where it belongs, and issuing a second scroll would fight it.
+   */
   const handleCarouselScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const nextIndex = Math.round(event.nativeEvent.contentOffset.x / (cardWidth + gap));
-      setSelectedPlaceIndex(Math.max(0, Math.min(PLACES.length - 1, nextIndex)));
+      const index = carouselIndexAt(
+        event.nativeEvent.contentOffset.x,
+        cardWidth,
+        gap,
+        PLACES.length,
+      );
+
+      setSelectedPlaceIndex(index);
+
+      const place = PLACES[index];
+      if (place) centerOn(place.coordinate);
     },
-    [cardWidth, gap],
+    [cardWidth, gap, centerOn],
   );
 
   if (!ready) {
@@ -141,14 +198,21 @@ export function MapScreen() {
         style={{ flex: 1 }}
         toolbarEnabled={false}
       >
-        {PLACES.map((place) => (
+        {PLACES.map((place, index) => (
           <Marker
+            accessibilityLabel={`${place.name}. Mostrar no carrossel`}
             anchor={{ x: 0.5, y: 1 }}
             coordinate={place.coordinate}
             key={place.id}
-            onPress={() => openPlace(place)}
-            title={place.name}
+            onPress={() => focusPlace(index)}
+            // No `title`: it opens the platform's own info window, which would
+            // preview the same venue as the card in a second, conflicting style.
             tracksViewChanges={false}
+            // Selection is shown by raising the pin, not by restyling it:
+            // `tracksViewChanges={false}` freezes each marker's bitmap after the
+            // first render, so a new look would never reach the map. `zIndex` is
+            // a native prop and applies without redrawing the view.
+            zIndex={index === selectedPlaceIndex ? 5 : 1}
           >
             <VenueMarker />
           </Marker>
@@ -203,8 +267,17 @@ export function MapScreen() {
         </View>
       ) : null}
 
-      {/* Sits above the carousel and clear of the tab bar. */}
-      <View className="absolute right-4" style={{ bottom: carouselBottom + 252 }}>
+      {/* Sits above the carousel and clear of the tab bar, on the carousel's
+          measured height rather than a guess at how tall a card turns out. */}
+      <View
+        className="absolute right-4"
+        style={{
+          bottom:
+            carouselBottom +
+            (carouselHeight || ESTIMATED_CAROUSEL_HEIGHT) +
+            RECENTER_GAP,
+        }}
+      >
         <IconButton
           accessibilityHint="Centraliza o mapa na sua posição atual"
           accessibilityLabel="Minha localização"
@@ -217,24 +290,35 @@ export function MapScreen() {
         </IconButton>
       </View>
 
-      <View className="absolute left-0 right-0" style={{ bottom: carouselBottom }}>
+      <View
+        className="absolute left-0 right-0"
+        onLayout={(event) => setCarouselHeight(event.nativeEvent.layout.height)}
+        style={{ bottom: carouselBottom }}
+      >
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: sidePadding, gap }}
+          contentContainerStyle={{ paddingHorizontal: sidePadding }}
           decelerationRate="fast"
           horizontal
           onMomentumScrollEnd={handleCarouselScrollEnd}
+          ref={carouselRef}
           showsHorizontalScrollIndicator={false}
           snapToAlignment="start"
           snapToInterval={cardWidth + gap}
         >
           {PLACES.map((place, index) => (
-            <PlaceCard
+            <View
               key={place.id}
-              onPress={() => openPlace(place)}
-              place={place}
-              selected={index === selectedPlaceIndex}
-              width={cardWidth}
-            />
+              style={{
+                width: cardWidth,
+                marginRight: index === PLACES.length - 1 ? 0 : gap,
+              }}
+            >
+              <PlaceCard
+                onPress={() => openPlace(place)}
+                place={place}
+                selected={index === selectedPlaceIndex}
+              />
+            </View>
           ))}
         </ScrollView>
       </View>

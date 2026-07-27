@@ -15,7 +15,8 @@ export const PLACES: Place[] = [
     category: 'Boteco e petiscos',
     address: 'Rua Lina Figueiredo, Jardins de Allah',
     distance: '2.4 km',
-    hours: 'Aberto hoje ate 23:00',
+    hours:
+      'Segunda: 09:00 as 23:00; Terca: 09:00 as 23:00; Quarta: 09:00 as 23:00; Quinta: 09:00 as 23:00; Sext...',
     rating: '4.9',
     isOpen: true,
     image: 'neutral',
@@ -28,7 +29,8 @@ export const PLACES: Place[] = [
     category: 'Bar local',
     address: 'Rua Alto da Paz, Aurora, Sao Luis/MA 47 B',
     distance: '3.1 km',
-    hours: 'Abre hoje as 12:09',
+    hours:
+      'Segunda: 07:00 as 12:09; Terca: 07:00 as 00:09; Quarta: 07:00 as 00:09; Quinta...',
     rating: '4.6',
     isOpen: false,
     image: 'amber',
