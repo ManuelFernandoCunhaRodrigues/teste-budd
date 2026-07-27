@@ -4,6 +4,7 @@ import {
   buildDirectionsUrl,
   canStartTicketFlow,
   filterShows,
+  formatShowDate,
   nearbyShows,
   normalizeText,
   searchArtists,
@@ -184,6 +185,32 @@ describe('nearbyShows', () => {
     const result = nearbyShows([unlocated], SAO_LUIS.coordinate, 1);
     expect(result).toHaveLength(1);
     expect(result[0].distanceLabel).toBeNull();
+  });
+});
+
+describe('formatShowDate', () => {
+  it('formats a full timestamp', () => {
+    const label = formatShowDate(LINEUP_SHOWS[0].startsAt);
+
+    expect(label).not.toHaveLength(0);
+    expect(label).toMatch(/\d{2}:\d{2}/);
+  });
+
+  it('returns empty instead of throwing on something it cannot parse', () => {
+    // `Intl.DateTimeFormat` raises RangeError on an invalid date, which took the
+    // artist screen down when a `HH:mm` opening time was passed here by mistake.
+    expect(() => formatShowDate('20:00')).not.toThrow();
+    expect(formatShowDate('20:00')).toBe('');
+    expect(formatShowDate('')).toBe('');
+    expect(formatShowDate('nao-e-uma-data')).toBe('');
+  });
+
+  it('never receives a timestamp in doorsOpenAt', () => {
+    // The field is a local HH:mm by contract; this guards the fixture against a
+    // well-meaning edit that turns it into an ISO string.
+    for (const show of LINEUP_SHOWS) {
+      if (show.doorsOpenAt) expect(show.doorsOpenAt).toMatch(/^\d{2}:\d{2}$/);
+    }
   });
 });
 

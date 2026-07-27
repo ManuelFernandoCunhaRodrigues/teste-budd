@@ -144,13 +144,24 @@ export function nearbyShows(
     });
 }
 
+/**
+ * Formats a full ISO timestamp as "16 de ago., 22:00".
+ *
+ * Returns an empty string for anything it cannot parse instead of throwing.
+ * `Intl.DateTimeFormat` raises `RangeError` on an invalid date, which takes the
+ * whole screen down — and the value reaching here is data, not a constant. This
+ * crashed the artist screen when a `HH:mm` string was passed by mistake.
+ */
 export function formatShowDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(iso));
+  }).format(date);
 }
 
 export function ticketStatusLabel(status: LineUpShow['ticketStatus']): string {

@@ -108,7 +108,8 @@ function ShowBlock({ show }: { show: LineUpShow }) {
         <CalendarIcon color={colors.textMuted} size={13} />
         <Text className="flex-1 text-sm text-text-soft">
           {formatShowDate(show.startsAt)}
-          {show.doorsOpenAt ? ` · portões ${formatShowDate(show.doorsOpenAt)}` : ''}
+          {/* Rendered as-is: `doorsOpenAt` is a local `HH:mm`, not a timestamp. */}
+          {show.doorsOpenAt ? ` · portões ${show.doorsOpenAt}` : ''}
         </Text>
       </View>
 

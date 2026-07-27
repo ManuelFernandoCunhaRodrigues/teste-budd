@@ -51,6 +51,12 @@ export interface LineUpShow {
   date: string;
   startsAt: string;
   endsAt: string;
+  /**
+   * Local opening time as `HH:mm` — not a timestamp.
+   *
+   * Deliberately spelled out: passing this to `formatShowDate`, which expects a
+   * full ISO string, throws `RangeError` and takes the screen down.
+   */
   doorsOpenAt?: string;
   venue: LineUpVenue;
   minimumPriceInCents?: MoneyInCents;
