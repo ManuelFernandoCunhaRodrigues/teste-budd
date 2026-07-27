@@ -8,6 +8,7 @@ export {
   CalendarIcon,
   HeartIcon,
   TrashIcon,
+  CloseIcon,
   MinusIcon,
   PlusIcon,
   EditIcon,

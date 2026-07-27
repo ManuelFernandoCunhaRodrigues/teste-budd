@@ -103,6 +103,20 @@ export function TrashIcon({ size = 15, color = DEFAULT_ICON_COLOR }: IconProps) 
   );
 }
 
+/** Dismiss control for sheets and modals. */
+export function CloseIcon({ size = 20, color = DEFAULT_ICON_COLOR }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M5.5 5.5l9 9M14.5 5.5l-9 9"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 /**
  * Stepper glyphs.
  *
