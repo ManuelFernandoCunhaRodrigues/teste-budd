@@ -19,6 +19,7 @@ export const ROUTES = {
   products: '/products',
   profile: '/profile',
 
+  artist: (id: string) => ({ pathname: '/artist/[id]' as const, params: { id } }),
   bar: (id: string) => ({ pathname: '/bar/[id]' as const, params: { id } }),
   event: (id: string) => ({ pathname: '/event/[id]' as const, params: { id } }),
   order: (id: string) => ({ pathname: '/order/[id]' as const, params: { id } }),
