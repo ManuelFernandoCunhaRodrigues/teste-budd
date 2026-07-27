@@ -14,7 +14,12 @@ import type {
   WalletBalance,
   WalletTransaction,
 } from '@/domain/wallet/walletTypes';
-import type { AuthenticatedUser, SignInCredentials, SignInResponse } from '@/services/auth/authTypes';
+import type {
+  AuthenticatedUser,
+  SignInCredentials,
+  SignInResponse,
+  SignUpInput,
+} from '@/services/auth/authTypes';
 
 /**
  * Everything the critical flows need from a server, in one interface.
@@ -27,6 +32,8 @@ import type { AuthenticatedUser, SignInCredentials, SignInResponse } from '@/ser
 export interface BackendPort {
   // --- Auth ---------------------------------------------------------------
   signIn(credentials: SignInCredentials): Promise<SignInResponse>;
+  /** Creates an account and returns a session for it, exactly like signIn. */
+  signUp(input: SignUpInput): Promise<SignInResponse>;
   /** Validates a stored token and returns who it belongs to. */
   fetchCurrentUser(accessToken: string): Promise<AuthenticatedUser>;
   signOut(accessToken: string): Promise<void>;

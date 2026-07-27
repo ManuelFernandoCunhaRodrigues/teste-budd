@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import * as accountService from '@/services/account/accountService';
 import * as authService from '@/services/auth/authService';
-import type { AuthenticatedUser, SignInCredentials } from '@/services/auth/authTypes';
+import type { AuthenticatedUser, SignInCredentials, SignUpInput } from '@/services/auth/authTypes';
 import { normalizeError, reportError } from '@/services/errors';
 import { useReviewsStore } from '@/features/bars/store/reviewsStore';
 
@@ -34,6 +34,8 @@ interface SessionState {
 
   restoreSession: () => Promise<void>;
   signIn: (credentials: SignInCredentials) => Promise<void>;
+  /** Creates an account and opens its session. Throws on failure. */
+  signUp: (input: SignUpInput) => Promise<void>;
   signOut: () => Promise<void>;
   /** Deletes the account server-side, then clears this device. Throws on failure. */
   deleteAccount: () => Promise<void>;
@@ -129,6 +131,40 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       });
 
       // Rethrown so the screen does not navigate on a failed sign-in.
+      throw normalized;
+    } finally {
+      set({ isSigningIn: false });
+    }
+  },
+
+  signUp: async (input) => {
+    // Shares the in-flight latch with signIn: both open a session, and two
+    // overlapping attempts would race to set it.
+    if (get().isSigningIn) return;
+
+    set({ isSigningIn: true, authError: null });
+
+    try {
+      const session = await authService.signUp(input);
+
+      set({
+        status: 'authenticated',
+        accessToken: session.accessToken,
+        user: session.user,
+        authError: null,
+      });
+    } catch (error) {
+      const normalized = normalizeError(error);
+      reportError(error, { scope: 'sessionStore.signUp', email: input.email });
+
+      set({
+        status: 'unauthenticated',
+        accessToken: null,
+        user: null,
+        authError: normalized.userMessage,
+      });
+
+      // Rethrown so the screen does not navigate on a failed registration.
       throw normalized;
     } finally {
       set({ isSigningIn: false });

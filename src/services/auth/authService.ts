@@ -3,7 +3,7 @@ import { backend } from '@/services/backend';
 import { AppError, normalizeError, reportError } from '@/services/errors';
 
 import { getAuthStorage } from './authStorage';
-import type { AuthSession, SignInCredentials } from './authTypes';
+import type { AuthSession, SignInCredentials, SignUpInput } from './authTypes';
 import { isSessionExpired } from './authTypes';
 
 /**
@@ -34,6 +34,47 @@ export function validateCredentials(credentials: SignInCredentials): {
   return errors;
 }
 
+/** Shortest password a new account may choose. */
+export const MIN_PASSWORD_LENGTH = 6;
+
+export interface SignUpFormInput {
+  name: string;
+  email: string;
+  password: string;
+  passwordConfirmation: string;
+}
+
+/**
+ * Validates a registration form.
+ *
+ * Separate from `validateCredentials` on purpose. Registration is the moment the
+ * rules apply — a length floor here protects the account being created, while
+ * the same check on sign-in would lock out anyone whose password predates it.
+ */
+export function validateSignUp(input: SignUpFormInput): Partial<Record<keyof SignUpFormInput, string>> {
+  const errors: Partial<Record<keyof SignUpFormInput, string>> = {};
+
+  if (!input.name.trim()) errors.name = 'Informe seu nome.';
+
+  const email = input.email.trim();
+  if (!email) errors.email = 'Informe seu e-mail.';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) errors.email = 'E-mail inválido.';
+
+  if (!input.password) errors.password = 'Crie uma senha.';
+  else if (input.password.length < MIN_PASSWORD_LENGTH) {
+    errors.password = `Use ao menos ${MIN_PASSWORD_LENGTH} caracteres.`;
+  }
+
+  // Checked even when the password itself is invalid: telling the user both
+  // problems at once beats making them submit twice to learn the second.
+  if (!input.passwordConfirmation) errors.passwordConfirmation = 'Repita a senha.';
+  else if (input.passwordConfirmation !== input.password) {
+    errors.passwordConfirmation = 'As senhas não coincidem.';
+  }
+
+  return errors;
+}
+
 /**
  * Exchanges credentials for a session and persists it.
  *
@@ -46,6 +87,31 @@ export async function signIn(credentials: SignInCredentials): Promise<AuthSessio
     password: credentials.password,
   });
 
+  return persistSession(response, 'signIn');
+}
+
+/**
+ * Creates an account and opens its session.
+ *
+ * Shares `persistSession` with sign-in rather than repeating it: the checks
+ * that make a session trustworthy — rejecting an already-expired token, storing
+ * before returning — must not have two implementations that can drift.
+ */
+export async function signUp(input: SignUpInput): Promise<AuthSession> {
+  const response = await backend.signUp({
+    name: input.name.trim(),
+    email: input.email.trim().toLowerCase(),
+    password: input.password,
+  });
+
+  return persistSession(response, 'signUp');
+}
+
+/** Validates, stores and activates a session returned by the server. */
+async function persistSession(
+  response: { accessToken: string; expiresAt: string; user: AuthSession['user'] },
+  origin: string,
+): Promise<AuthSession> {
   const session: AuthSession = {
     accessToken: response.accessToken,
     user: response.user,
@@ -56,7 +122,7 @@ export async function signIn(credentials: SignInCredentials): Promise<AuthSessio
   if (isSessionExpired(session)) {
     throw new AppError('unauthenticated', {
       userMessage: 'Não foi possível iniciar a sessão. Tente novamente.',
-      detail: 'signIn: server returned an already-expired token',
+      detail: `${origin}: server returned an already-expired token`,
     });
   }
 
