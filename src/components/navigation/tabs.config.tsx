@@ -85,11 +85,11 @@ export const TAB_BACK_BEHAVIOR = 'history' as const;
 // the only runtime inputs are the measured bar width and the safe-area inset.
 
 /** Icon edge length for the four outer tabs. ROLÊ overrides it in `TAB_ITEMS`. */
-export const ICON_SIZE = 24;
+export const ICON_SIZE = 22;
 
 /** Vertical rhythm of a tab cell, top to bottom. */
-export const ROW_PADDING_TOP = 14;
-export const ICON_LABEL_GAP = 6;
+export const ROW_PADDING_TOP = 17;
+export const ICON_LABEL_GAP = 5;
 /** Base line height for the `2xs` label. */
 export const LABEL_LINE_HEIGHT = 14;
 /**
@@ -101,7 +101,7 @@ export const LABEL_MAX_FONT_SIZE_MULTIPLIER = 1.3;
 export const LABEL_RESERVED_HEIGHT = Math.ceil(
   LABEL_LINE_HEIGHT * LABEL_MAX_FONT_SIZE_MULTIPLIER,
 );
-export const ROW_PADDING_BOTTOM = 14;
+export const ROW_PADDING_BOTTOM = 21;
 
 /**
  * Height of the bar's *content*, excluding the safe-area inset.
@@ -136,30 +136,62 @@ export const TAB_BAR_BOTTOM_GAP = 0;
 /** Top-corner radius. Shrinks automatically when the notch travels near a corner. */
 export const TAB_BAR_CORNER_RADIUS = 22;
 
+/**
+ * Bottom-corner radius, deliberately far larger than the top one.
+ *
+ * The heavy curve is what makes the bar read as a floating pill instead of a
+ * panel welded to the screen edge. Capped at draw time against half the width
+ * and the body height, so it degrades rather than producing an invalid path.
+ */
+export const TAB_BAR_BOTTOM_CORNER_RADIUS = 42;
+
+/**
+ * Width of the translucent dark ring drawn around the indicator.
+ *
+ * Separates the green disc from the bar surface behind it, so the two greens do
+ * not touch and the circle reads as seated in the notch.
+ */
+export const INDICATOR_RING_WIDTH = 3;
+
 /** Diameter of the green circle that marks the active tab. */
-export const CENTER_BUTTON_SIZE = 56;
+export const CENTER_BUTTON_SIZE = 58;
 
 /**
  * Horizontal span of the concave notch.
  *
- * Bounded on both sides. It must exceed `CENTER_BUTTON_SIZE` or the indicator
- * pokes out through the walls; and half of it must stay under 10% of the
- * narrowest supported bar width — that is where the outer tabs are centred, and
- * anything wider forces the notch to clamp away from them. On a 320pt screen the
- * bar is 296pt wide, so the outer tabs sit at 29.6pt: at 64 the worst case is
- * off by 2.4pt, against 6.4pt at 72.
+ * It must exceed `CENTER_BUTTON_SIZE` or the indicator pokes out through the
+ * walls. At 72 the mouth clears the 56pt circle by 8pt a side, which is what
+ * makes it read as a scoop the button sits in rather than a slot cut to fit.
+ *
+ * The cost is at the other end. Half the notch has to fit between the bar edge
+ * and the outer tab centre, which sits at 10% of the bar's width; past that the
+ * notch clamps and stops tracking those two tabs exactly:
+ *
+ *     screen   bar    outer tab   clamp at 72
+ *     320pt    296    29.6pt      6.4pt
+ *     360pt    336    33.6pt      2.4pt
+ *     390pt+   366+   36.6pt+     none
+ *
+ * So the wider mouth is free on any current phone and costs alignment only on
+ * the 320pt floor. That trade is deliberate — see the tolerance table in
+ * `tabBarGeometry.test.ts`, which pins it per width rather than to one number.
  */
-export const NOTCH_WIDTH = 64;
+export const NOTCH_WIDTH = 72;
 
-/** How far the notch dips below the bar's flat top edge. */
-export const NOTCH_DEPTH = 30;
+/**
+ * How far the notch dips below the bar's flat top edge.
+ *
+ * Deepened with the widening: a wider mouth at the old 30pt read as a shallow
+ * dent, because the curve had further to travel in the same drop.
+ */
+export const NOTCH_DEPTH = 36;
 
 /**
  * Where the indicator's centre sits relative to the bar's flat top edge.
  *
- * Negative is above. At -2 the circle's lower edge lands 4pt clear of the notch
+ * Negative is above. At -2 the circle's lower edge lands 10pt clear of the notch
  * floor (`NOTCH_DEPTH - CENTER_BUTTON_SIZE / 2 - 2`), so it nests in the curve
- * without touching it and without floating visibly high.
+ * with the cavity open around it instead of hugging its outline.
  */
 export const INDICATOR_CENTER_OFFSET = -2;
 
@@ -167,7 +199,8 @@ export const INDICATOR_CENTER_OFFSET = -2;
  * Space reserved above the bar's top edge for the part of the indicator that
  * overhangs it, plus 2pt so its shadow is not clipped by the SVG bounds.
  */
-export const TAB_BAR_OVERHANG = CENTER_BUTTON_SIZE / 2 - INDICATOR_CENTER_OFFSET + 2;
+export const TAB_BAR_OVERHANG =
+  CENTER_BUTTON_SIZE / 2 + INDICATOR_RING_WIDTH - INDICATOR_CENTER_OFFSET + 2;
 
 /**
  * How far an icon must travel upward to land in the centre of the indicator.

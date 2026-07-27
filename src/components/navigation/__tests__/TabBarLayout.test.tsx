@@ -61,15 +61,21 @@ describe('TabBar layout', () => {
     expect(box.height).toBe(TAB_BAR_OVERHANG + TAB_BAR_HEIGHT);
   });
 
-  it('covers Android three-button navigation with the safe-area surface', async () => {
+  it('grows by the safe-area inset on Android three-button navigation', async () => {
     await renderTabBar('/role', THREE_BUTTON_METRICS);
 
     expect(styleOf(screen.getByTestId('tab-bar')).height).toBe(
       TAB_BAR_OVERHANG + TAB_BAR_HEIGHT + THREE_BUTTON_METRICS.insets.bottom,
     );
-    expect(styleOf(screen.getByTestId('tab-bar-system-underlay')).height).toBe(
-      THREE_BUTTON_METRICS.insets.bottom,
-    );
+  });
+
+  it('no longer paints an opaque strip across the safe area', async () => {
+    await renderTabBar('/role', THREE_BUTTON_METRICS);
+
+    // That underlay was a full-width rectangle, which squared off the two
+    // bottom corners the outline now rounds. The app background shows through
+    // them instead — the floating look depends on nothing covering them.
+    expect(screen.queryByTestId('tab-bar-system-underlay')).toBeNull();
   });
 
   it('keeps the bar clear of the screen edges', async () => {
@@ -84,7 +90,9 @@ describe('TabBar layout', () => {
     const box = styleOf(screen.getByTestId('tab-bar-indicator'));
 
     // The raised circle is visually above the flat bar surface but remains
-    // inside the actual parent bounds, so its upper half is tappable.
+    // inside the actual parent bounds, so its upper half is tappable. This is
+    // what caught the ring overflowing the container by a point when it was
+    // added: `TAB_BAR_OVERHANG` reserved room for the shadow but not for it.
     expect(box.top).toBeGreaterThanOrEqual(0);
     expect(box.top + box.height).toBeLessThanOrEqual(
       TAB_BAR_OVERHANG + TAB_BAR_HEIGHT + GESTURE_METRICS.insets.bottom,

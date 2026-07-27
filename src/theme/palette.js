@@ -41,6 +41,8 @@ module.exports = {
   'text-soft': '#CFCFCF',
   'text-muted': '#9A9A9A',
   'text-dim': '#7A7A7A',
+  /** Icons and labels in the bottom navigation, per the design spec. */
+  'nav-icon': '#858589',
   'text-faint': '#5A5A5A',
   'text-ghost': '#4A4A4A',
 

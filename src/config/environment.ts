@@ -54,6 +54,9 @@ const environmentName = readEnvironmentName();
 /** Mocks are additionally gated by `__DEV__`, so a production bundle cannot reach them. */
 const mocksRequested = process.env.EXPO_PUBLIC_ENABLE_DEV_BACKEND === 'true';
 
+/** Same gate as the mock backend: opt-in, and impossible to reach in production. */
+const mockMapRequested = process.env.EXPO_PUBLIC_USE_MOCK_MAP === 'true';
+
 const { url: parsedApiUrl } = parseApiBaseUrl(rawApiUrl, environmentName);
 const phone = validatePhoneNumber(process.env.EXPO_PUBLIC_WHATSAPP_SUPPORT_NUMBER);
 
@@ -64,6 +67,7 @@ export const environment: EnvironmentConfig = Object.freeze({
   apiBaseUrl: parsedApiUrl ? normaliseBaseUrl(parsedApiUrl.toString()) : null,
   apiTimeoutMs: readTimeout(),
   enableMocks: __DEV__ && mocksRequested,
+  useMockMap: __DEV__ && mockMapRequested,
   whatsappSupportNumber: phone.valid ? phone.number : null,
 });
 

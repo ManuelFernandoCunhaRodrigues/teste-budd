@@ -19,6 +19,7 @@ function config(overrides: Partial<EnvironmentConfig> = {}): EnvironmentConfig {
     apiBaseUrl: 'https://api.budd.app',
     apiTimeoutMs: 15_000,
     enableMocks: false,
+    useMockMap: false,
     whatsappSupportNumber: null,
     ...overrides,
   };

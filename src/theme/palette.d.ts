@@ -22,6 +22,7 @@ declare const palette: {
   readonly 'text-soft': string;
   readonly 'text-muted': string;
   readonly 'text-dim': string;
+  readonly 'nav-icon': string;
   readonly 'text-faint': string;
   readonly 'text-ghost': string;
   readonly danger: string;

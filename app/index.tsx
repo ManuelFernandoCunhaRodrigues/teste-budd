@@ -1,21 +1,23 @@
 import { Redirect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { useAppBootstrap } from '@/bootstrap/useAppBootstrap';
-import { LoadingState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
 import { Button } from '@/components/ui';
 import { isDevelopment } from '@/config/environment';
+import { AnimatedSplashScreen } from '@/features/splash';
 import { useSessionStore } from '@/store/sessionStore';
 
 /**
  * Boot screen.
  *
- * Holds the brand flame animation while startup actually runs, then routes on the
+ * Plays the opening sequence while startup actually runs, then routes on the
  * restored session. Previously this waited on a fixed `setTimeout` and read a
  * session status that might not have been resolved yet — so it could hand over
  * early (flashing login at a signed-in user) or late (waiting after everything
- * was ready).
+ * was ready). The animation now only ever *delays* the handover; it can never
+ * cause it.
  *
  * This is a convenience redirect, not a security boundary: the real gate is
  * `app/(private)/_layout`, which every private route passes through.
@@ -24,16 +26,34 @@ export default function BootRoute() {
   const bootstrap = useAppBootstrap();
   const status = useSessionStore((state) => state.status);
 
+  /**
+   * Whether the opening sequence has played out.
+   *
+   * Held here rather than inside the splash because it is half of the handover
+   * condition, and the other half is the bootstrap. The splash reports finishing
+   * and nothing else — it never navigates.
+   */
+  const [animationFinished, setAnimationFinished] = useState(false);
+  const handleFinish = useCallback(() => setAnimationFinished(true), []);
+
   if (bootstrap.status === 'error' && bootstrap.blockingError) {
     return <BootstrapErrorScreen error={bootstrap.blockingError} onRetry={bootstrap.retry} />;
   }
 
-  // `status === 'checking'` is belt and braces: the blocking phase awaits
-  // `restoreSession`, so it should already be settled here.
-  if (bootstrap.status !== 'ready' || status === 'checking') {
+  /**
+   * Both halves have to be true, and either may arrive first.
+   *
+   * A fast bootstrap waits for the animation, so the sequence is never cut off
+   * mid-stroke; a slow one holds the finished mark on screen instead of dropping
+   * the user onto an empty route. `status === 'checking'` is belt and braces:
+   * the blocking phase awaits `restoreSession`, so it should already be settled.
+   */
+  const bootstrapFinished = bootstrap.status === 'ready' && status !== 'checking';
+
+  if (!animationFinished || !bootstrapFinished) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <LoadingState variant="role" />
+        <AnimatedSplashScreen onFinish={handleFinish} />
       </Screen>
     );
   }

@@ -19,6 +19,13 @@ export interface EnvironmentConfig {
   readonly apiTimeoutMs: number;
   /** In-memory dev backend. Never true in production. */
   readonly enableMocks: boolean;
+  /**
+   * Draws a simulated map instead of Google Maps.
+   *
+   * For demonstrations only, and gated behind `__DEV__` like the mock backend:
+   * a shipped build must never present a drawing as the map.
+   */
+  readonly useMockMap: boolean;
   /** Digits only, no `+`. `null` when unset or rejected. */
   readonly whatsappSupportNumber: string | null;
 }

@@ -23,11 +23,11 @@ export const shadows = {
     elevation: 10,
   },
   navIndicator: {
-    shadowColor: colors.primary,
+    shadowColor: colors.flame,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
   },
   marker: {
     shadowColor: '#000000',

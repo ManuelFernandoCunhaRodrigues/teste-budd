@@ -23,6 +23,7 @@ import {
   CENTER_BUTTON_SIZE,
   CENTER_TAB_INDEX,
   INDICATOR_CENTER_OFFSET,
+  INDICATOR_RING_WIDTH,
   TAB_BAR_BOTTOM_GAP,
   TAB_BAR_HEIGHT,
   TAB_BAR_HORIZONTAL_MARGIN,
@@ -113,9 +114,12 @@ export function TabBar({ activeIndex, children, style, ...props }: TabBarProps) 
     opacity: hasActiveTab ? 1 : 0,
     transform: [
       {
+        // Half the *ringed* width, not half the disc: the ring widened this view
+        // on both sides, and subtracting the old figure would sit the green
+        // circle a ring's width right of the notch it belongs to.
         translateX:
           clampNotchCenter(tabCenter(progress.value, barWidth), barWidth) -
-          CENTER_BUTTON_SIZE / 2,
+          (CENTER_BUTTON_SIZE / 2 + INDICATOR_RING_WIDTH),
       },
     ],
   }));
@@ -136,20 +140,10 @@ export function TabBar({ activeIndex, children, style, ...props }: TabBarProps) 
       ]}
       testID="tab-bar"
     >
-      {/* The system gesture/button region gets an opaque app background even
-          beside the floating bar's horizontal margins. */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.systemInsetUnderlay,
-          {
-            height: insets.bottom,
-            left: -TAB_BAR_HORIZONTAL_MARGIN,
-            right: -TAB_BAR_HORIZONTAL_MARGIN,
-          },
-        ]}
-        testID="tab-bar-system-underlay"
-      />
+      {/* No underlay across the safe-area strip any more: it was an opaque
+          rectangle spanning the full width, which squared off the bottom corners
+          the path now rounds. The app background shows through those two curves
+          instead, which is what makes the bar read as floating. */}
 
       {/* Decorative: the full-height row below receives every touch. */}
       <Svg
@@ -175,18 +169,33 @@ export function TabBar({ activeIndex, children, style, ...props }: TabBarProps) 
             top:
               TAB_BAR_OVERHANG +
               INDICATOR_CENTER_OFFSET -
-              CENTER_BUTTON_SIZE / 2,
+              CENTER_BUTTON_SIZE / 2 -
+              INDICATOR_RING_WIDTH,
             left: 0,
-            width: CENTER_BUTTON_SIZE,
-            height: CENTER_BUTTON_SIZE,
-            borderRadius: CENTER_BUTTON_SIZE / 2,
-            backgroundColor: colors.primary,
+            width: CENTER_BUTTON_SIZE + INDICATOR_RING_WIDTH * 2,
+            height: CENTER_BUTTON_SIZE + INDICATOR_RING_WIDTH * 2,
+            borderRadius: CENTER_BUTTON_SIZE / 2 + INDICATOR_RING_WIDTH,
+            // A translucent dark ring separating the circle from the bar it sits
+            // in. Drawn as this view's own background with the green disc inset
+            // inside it, so there is no seam between the two to catch light.
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            alignItems: 'center',
+            justifyContent: 'center',
           },
           shadows.navIndicator,
           indicatorStyle,
         ]}
         testID="tab-bar-indicator"
-      />
+      >
+        <View
+          style={{
+            width: CENTER_BUTTON_SIZE,
+            height: CENTER_BUTTON_SIZE,
+            borderRadius: CENTER_BUTTON_SIZE / 2,
+            backgroundColor: colors.flame,
+          }}
+        />
+      </Animated.View>
 
       <View
         pointerEvents="box-none"
@@ -223,10 +232,5 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: 'row',
     alignItems: 'stretch',
-  },
-  systemInsetUnderlay: {
-    position: 'absolute',
-    bottom: 0,
-    backgroundColor: colors.surfaceNav,
   },
 });

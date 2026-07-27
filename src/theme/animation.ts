@@ -1,3 +1,5 @@
+import { Easing } from 'react-native-reanimated';
+
 /** Animation durations in milliseconds, lifted from the design's keyframes. */
 export const duration = {
   press: 120,
@@ -9,12 +11,46 @@ export const duration = {
   glow: 1800,
 } as const;
 
-/** How long each faux-loading screen dwells before revealing its content. */
-export const loadingDelay = {
-  boot: 1900,
-  role: 1100,
-  map: 1850,
-  artist: 700,
+/**
+ * Easing curves, shared so the same kind of movement reads the same everywhere.
+ *
+ * `standard` covers almost everything. The other three exist for the cases where
+ * direction carries meaning: something arriving should settle (`decelerate`),
+ * something leaving should gather speed (`accelerate`), and something the user
+ * asked for directly can afford a firmer attack (`emphasized`).
+ */
+export const easing = {
+  standard: Easing.bezier(0.2, 0, 0, 1),
+  emphasized: Easing.bezier(0.3, 0, 0, 1),
+  decelerate: Easing.out(Easing.cubic),
+  accelerate: Easing.in(Easing.cubic),
+} as const;
+
+/**
+ * Spring presets for movement the user drives.
+ *
+ * Timing is for state changes — a thing becomes visible, a colour becomes
+ * another colour. Springs are for anything that should feel like it has mass:
+ * a sheet being dragged, a button pushed, a notch chasing a tap.
+ */
+export const spring = {
+  /** Settles without overshoot. Sheets, panels, anything large. */
+  soft: { damping: 18, stiffness: 180, mass: 0.8 },
+  /** Quick and tight, for direct manipulation. */
+  interactive: { damping: 15, stiffness: 240, mass: 0.7 },
+  /** Allows a little overshoot, for moments worth noticing. */
+  expressive: { damping: 12, stiffness: 190, mass: 0.75 },
+} as const;
+
+/**
+ * How far an element travels on entrance, in points.
+ *
+ * Deliberately small. A long slide reads as the screen being rebuilt; 8pt reads
+ * as it settling into place.
+ */
+export const motionOffset = {
+  screen: 8,
+  card: 12,
 } as const;
 
 /** Toast visibility window. */

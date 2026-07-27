@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
-  interpolateColor,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -47,11 +46,10 @@ export interface TabBarButtonProps {
  * When focused the icon lifts by exactly `ACTIVE_ICON_LIFT` — derived from the
  * row metrics in `tabs.config`, so it lands in the centre of the indicator
  * rather than near it — and turns near-black to read against the green. The
- * label stays put and shifts to the brand green, which keeps the tab named
- * while it is active instead of leaving an unlabelled circle.
+ * label fades out as that happens, leaving the raised circle to stand alone.
  *
  * The icon colour is a cross-fade between two copies because SVG `fill` cannot
- * be driven by an animated style; the label colour can be, so it is.
+ * be driven by an animated style.
  *
  * This component is visual content only. `TabTrigger` itself is the Pressable
  * and the flex item in the row. Keeping that host element direct is important:
@@ -88,8 +86,20 @@ export function TabBarButton({
   const activeIconStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
   const inactiveIconStyle = useAnimatedStyle(() => ({ opacity: 1 - progress.value }));
 
+  /**
+   * The active tab's label fades out, leaving the indicator to name it.
+   *
+   * Reverses an earlier choice to keep it green and visible. The design calls
+   * for the raised circle to stand alone, and a word directly under it competed
+   * with the icon it already carries.
+   *
+   * Only the ink goes: the label keeps its place in the layout so the row does
+   * not shift as selection moves, and the `accessibilityLabel` on the pressable
+   * still names the tab, so nothing changes for a screen reader.
+   */
   const labelStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(progress.value, [0, 1], [colors.textDim, colors.primary]),
+    color: colors.navIcon,
+    opacity: 1 - progress.value,
   }));
 
   return (
@@ -97,7 +107,7 @@ export function TabBarButton({
       <Animated.View pointerEvents="none" style={iconStyle}>
         <View style={{ width: iconSize, height: iconSize }}>
           <Animated.View style={inactiveIconStyle}>
-            <Icon color={colors.textDim} size={iconSize} />
+            <Icon color={colors.navIcon} size={iconSize} />
           </Animated.View>
           {/* Stacked on top so the two colours cross-fade in place. */}
           <Animated.View style={[{ position: 'absolute', inset: 0 }, activeIconStyle]}>
@@ -119,7 +129,7 @@ export function TabBarButton({
             marginTop: ICON_LABEL_GAP,
             fontSize: fontSize['2xs'],
             lineHeight: LABEL_LINE_HEIGHT,
-            fontWeight: fontWeight.semibold,
+            fontWeight: fontWeight.medium,
           },
           labelStyle,
         ]}

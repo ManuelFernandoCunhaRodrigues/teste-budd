@@ -1,6 +1,7 @@
 import {
   NOTCH_DEPTH,
   NOTCH_WIDTH,
+  TAB_BAR_BOTTOM_CORNER_RADIUS,
   TAB_BAR_CORNER_RADIUS,
   TAB_BAR_OVERHANG,
   TAB_COUNT,
@@ -42,8 +43,8 @@ export function clampNotchCenter(center: number, barWidth: number): number {
 }
 
 /**
- * The bar outline: rounded top corners, a concave notch centred on `center`,
- * and square bottom corners flush with the screen edge.
+ * The bar outline: discreetly rounded top corners, a concave notch centred on
+ * `center`, and heavily rounded bottom corners.
  *
  * The notch is two mirrored cubic Béziers rather than a circular arc. Every
  * control point shares a y with the anchor it belongs to, which makes the
@@ -94,6 +95,23 @@ export function buildTabBarPath(center: number, barWidth: number, totalHeight: n
       ? `H${(barWidth - rightRadius).toFixed(2)} A${rightRadius.toFixed(2)},${rightRadius.toFixed(2)} 0 0 1 ${barWidth.toFixed(2)},${(top + rightRadius).toFixed(2)} `
       : `H${barWidth.toFixed(2)} `;
 
+  // Bottom corners are rounded far harder than the top ones, which is what makes
+  // the bar read as a floating pill rather than a panel stuck to the edge. The
+  // radius is capped by both half the width and the body height, so a narrow or
+  // short bar degrades to a smaller curve instead of an invalid path.
+  const bottomRadius = Math.max(
+    0,
+    Math.min(TAB_BAR_BOTTOM_CORNER_RADIUS, barWidth / 2, totalHeight - top),
+  );
+
+  const bottom =
+    bottomRadius > 0.5
+      ? `V${(totalHeight - bottomRadius).toFixed(2)} ` +
+        `A${bottomRadius.toFixed(2)},${bottomRadius.toFixed(2)} 0 0 1 ${(barWidth - bottomRadius).toFixed(2)},${totalHeight.toFixed(2)} ` +
+        `H${bottomRadius.toFixed(2)} ` +
+        `A${bottomRadius.toFixed(2)},${bottomRadius.toFixed(2)} 0 0 1 0,${(totalHeight - bottomRadius).toFixed(2)} Z`
+      : `V${totalHeight.toFixed(2)} H0 Z`;
+
   return (
     start +
     `H${left.toFixed(2)} ` +
@@ -104,6 +122,6 @@ export function buildTabBarPath(center: number, barWidth: number, totalHeight: n
     `${(right - shoulder).toFixed(2)},${top.toFixed(2)} ` +
     `${right.toFixed(2)},${top.toFixed(2)} ` +
     end +
-    `V${totalHeight.toFixed(2)} H0 Z`
+    bottom
   );
 }

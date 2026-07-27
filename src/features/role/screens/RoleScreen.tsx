@@ -1,9 +1,6 @@
 import { useState } from 'react';
 
-import { LoadingState } from '@/components/feedback';
 import { Screen } from '@/components/layout';
-import { useDelayedFlag } from '@/hooks/useDelayedFlag';
-import { loadingDelay } from '@/theme';
 
 import { BarsFeed } from '../components/BarsFeed';
 import { EventsFeed } from '../components/EventsFeed';
@@ -12,8 +9,11 @@ import { RoleTabs, type RoleTab } from '../components/RoleTabs';
 /**
  * The app's home surface, listing nearby venues and events.
  *
- * The brand loading animation runs for a fixed beat on entry — it is a
- * deliberate part of the experience in the design, not a data dependency.
+ * No screen-level loading gate. There used to be a fixed 1.1s dwell here, added
+ * to give the brand flame animation time to play; the flame is gone, and what
+ * remained was a timer that delayed the feeds — which then showed their own
+ * skeletons anyway, from real request status. Waiting to show a placeholder is
+ * strictly worse than showing it.
  *
  * The screen no longer wraps its content in a `ScrollView`: each feed is a
  * virtualised list that owns the vertical scroll, and the tab switcher travels
@@ -22,15 +22,6 @@ import { RoleTabs, type RoleTab } from '../components/RoleTabs';
  */
 export function RoleScreen() {
   const [tab, setTab] = useState<RoleTab>('eventos');
-  const ready = useDelayedFlag(loadingDelay.role);
-
-  if (!ready) {
-    return (
-      <Screen>
-        <LoadingState variant="role" />
-      </Screen>
-    );
-  }
 
   const tabs = <RoleTabs active={tab} onChange={setTab} />;
 

@@ -70,20 +70,51 @@ describe('clampNotchCenter', () => {
     expect(clampNotchCenter(raw, width)).toBe(raw);
   });
 
+  /**
+   * How far the notch may sit from a tab centre, per screen width.
+   *
+   * One number for every size would either forbid the 72pt mouth outright or go
+   * so slack that a real regression on a large phone slips through. The notch
+   * only clamps where half of it does not fit beside the outer tab, which is a
+   * function of width — so the budget is too.
+   *
+   * 390pt and up must be exact: that is every current phone, and the notch
+   * missing the icon there would be a defect, not a trade.
+   */
+  const CLAMP_BUDGET_PT: Record<number, number> = {
+    320: 7,
+    360: 3,
+    390: 0.01,
+    412: 0.01,
+    430: 0.01,
+    768: 0.01,
+  };
+
   it.each(SCREEN_WIDTHS)(
-    'stays within 3pt of the true tab centre at %ipt wide',
+    'keeps the notch within its clamp budget at %ipt wide',
     (screenWidth) => {
-      // The outer tabs are the only ones that clamp at all. The tolerance is what
-      // makes "the notch is aligned to the active tab" true in practice — if a
-      // change pushes it past this, the circle visibly misses the icon.
       const width = barWidthFor(screenWidth);
+      const budget = CLAMP_BUDGET_PT[screenWidth];
+
+      expect(budget).toBeDefined();
 
       for (let index = 0; index < TAB_COUNT; index += 1) {
         const raw = tabCenter(index, width);
-        expect(Math.abs(clampNotchCenter(raw, width) - raw)).toBeLessThan(3);
+        expect(Math.abs(clampNotchCenter(raw, width) - raw)).toBeLessThan(budget);
       }
     },
   );
+
+  it('tracks every tab exactly on a phone-sized screen', () => {
+    // The headline guarantee, stated on its own so widening the notch again
+    // cannot quietly trade it away inside a table of tolerances.
+    const width = barWidthFor(390);
+
+    for (let index = 0; index < TAB_COUNT; index += 1) {
+      const raw = tabCenter(index, width);
+      expect(clampNotchCenter(raw, width)).toBe(raw);
+    }
+  });
 
   it('centres the notch when the bar is narrower than the notch itself', () => {
     expect(clampNotchCenter(10, 40)).toBe(20);
@@ -151,10 +182,24 @@ describe('buildTabBarPath', () => {
     expect(path.match(new RegExp(`A${full},${full}`, 'g')) ?? []).toHaveLength(1);
   });
 
-  it('closes flush with the bottom of the bar, leaving no uncovered strip', () => {
+  it('rounds the bottom corners instead of squaring them off', () => {
     const path = buildTabBarPath(tabCenter(CENTER_TAB_INDEX, width), width, height);
 
-    expect(path).toContain(`V${height.toFixed(2)} H0 Z`);
+    // The old outline ended `V{height} H0 Z` — a hard rectangle against the
+    // screen edge. It now reaches the same depth through two arcs, which is what
+    // makes the bar read as floating.
+    expect(path).not.toContain(`V${height.toFixed(2)} H0 Z`);
+    expect(path).toContain(`,${height.toFixed(2)}`);
+    expect(path.trim().endsWith('Z')).toBe(true);
+  });
+
+  it('never lets the bottom radius exceed the shape it is rounding', () => {
+    // A narrow bar must degrade to a smaller curve rather than emit an arc the
+    // path cannot close.
+    const narrow = buildTabBarPath(20, 40, 120);
+
+    expect(narrow).not.toContain('NaN');
+    expect(narrow.trim().endsWith('Z')).toBe(true);
   });
 
   it('keeps the indicator clear of the notch floor', () => {

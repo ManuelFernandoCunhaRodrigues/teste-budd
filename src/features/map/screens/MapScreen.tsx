@@ -11,19 +11,19 @@ import {
 } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
-import { LoadingState } from '@/components/feedback';
-import { Screen } from '@/components/layout';
 import { useTabBarContentInset } from '@/components/navigation';
 import { Button, IconButton } from '@/components/ui';
 import { MapPinIcon } from '@/components/ui/icons';
+import { environment } from '@/config/environment';
 import { DEFAULT_REGION } from '@/constants/app';
 import { ROUTES } from '@/constants/routes';
-import { useDelayedFlag } from '@/hooks/useDelayedFlag';
 import { PLACES } from '@/mocks/places';
-import { colors, loadingDelay } from '@/theme';
+import { colors } from '@/theme';
 import type { Coordinate, Place } from '@/types/domain';
 
 import { carouselIndexAt, carouselOffsetFor } from '../carouselGeometry';
+import { MockMapSurface } from '../components/MockMapSurface';
+import { MockVenuePin } from '../components/MockVenuePin';
 import { PlaceCard } from '../components/PlaceCard';
 import { UserLocationMarker } from '../components/UserLocationMarker';
 import { VenueMarker } from '../components/VenueMarker';
@@ -57,7 +57,6 @@ export function MapScreen() {
   const router = useRouter();
   const tabBarInset = useTabBarContentInset();
   const { width } = useWindowDimensions();
-  const ready = useDelayedFlag(loadingDelay.map);
   const location = useUserLocation();
   const [selectedPlaceIndex, setSelectedPlaceIndex] = useState(0);
 
@@ -164,13 +163,11 @@ export function MapScreen() {
     [cardWidth, gap, centerOn],
   );
 
-  if (!ready) {
-    return (
-      <Screen>
-        <LoadingState variant="map" />
-      </Screen>
-    );
-  }
+  // No loading gate. A fixed 1.85s dwell used to sit here so the map loader
+  // animation could play; it delayed a map that renders immediately, while the
+  // one thing genuinely still resolving — the device fix — already reports
+  // itself through the banner below. Hiding a working map behind a placeholder
+  // made the screen feel slower than it is.
 
   const openPlace = (place: Place) => {
     if (place.target.type === 'bar') {
@@ -185,6 +182,24 @@ export function MapScreen() {
 
   return (
     <View className="flex-1 bg-map-backdrop">
+      {/* Demonstration mode: Google Maps draws an empty grey surface on Android
+          without an API key, so a drawn stand-in keeps the screen presentable
+          while that credential is missing. Every control, pin and card around it
+          stays exactly as it is — only the tiles are replaced. */}
+      {environment.useMockMap ? (
+        <MockMapSurface>
+          <View className="absolute inset-0" pointerEvents="box-none">
+            {PLACES.map((place, index) => (
+              <MockVenuePin
+                key={place.id}
+                onPress={() => focusPlace(index)}
+                place={place}
+                selected={index === selectedPlaceIndex}
+              />
+            ))}
+          </View>
+        </MockMapSurface>
+      ) : (
       <MapView
         // Safe starting frame; the camera moves once a real fix lands.
         initialRegion={DEFAULT_REGION}
@@ -227,6 +242,7 @@ export function MapScreen() {
           </Marker>
         ) : null}
       </MapView>
+      )}
 
       {/* Status banner. Never an empty screen: the map keeps working on the
           default region while this explains what is missing. */}

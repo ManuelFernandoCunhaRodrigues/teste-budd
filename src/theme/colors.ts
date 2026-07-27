@@ -36,6 +36,7 @@ export const colors = {
   textSoft: palette['text-soft'],
   textMuted: palette['text-muted'],
   textDim: palette['text-dim'],
+  navIcon: palette['nav-icon'],
   textFaint: palette['text-faint'],
   textGhost: palette['text-ghost'],
 
