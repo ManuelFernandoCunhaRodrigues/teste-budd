@@ -1,7 +1,9 @@
 import { View } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
+import { environment } from '@/config/environment';
 import { MINI_MAP_DELTA } from '@/constants/app';
+import { MockMapSurface } from '@/features/map/components/MockMapSurface';
 import { VenueMarker } from '@/features/map/components/VenueMarker';
 import type { Coordinate } from '@/types/domain';
 
@@ -24,19 +26,27 @@ export function EventMiniMap({ coordinate, locationLabel }: EventMiniMapProps) {
       accessibilityRole="image"
       className="mt-2.5 h-[150px] overflow-hidden rounded-lg bg-map-backdrop"
     >
-      <MapView
-        initialRegion={{ ...coordinate, ...MINI_MAP_DELTA }}
-        pitchEnabled={false}
-        provider={PROVIDER_DEFAULT}
-        rotateEnabled={false}
-        scrollEnabled={false}
-        style={{ flex: 1 }}
-        zoomEnabled={false}
-      >
-        <Marker anchor={{ x: 0.5, y: 1 }} coordinate={coordinate} tracksViewChanges={false}>
-          <VenueMarker size={36} />
-        </Marker>
-      </MapView>
+      {environment.useMockMap ? (
+        <MockMapSurface>
+          <View className="absolute inset-0 items-center justify-center pb-4" pointerEvents="none">
+            <VenueMarker size={36} />
+          </View>
+        </MockMapSurface>
+      ) : (
+        <MapView
+          initialRegion={{ ...coordinate, ...MINI_MAP_DELTA }}
+          pitchEnabled={false}
+          provider={PROVIDER_DEFAULT}
+          rotateEnabled={false}
+          scrollEnabled={false}
+          style={{ flex: 1 }}
+          zoomEnabled={false}
+        >
+          <Marker anchor={{ x: 0.5, y: 1 }} coordinate={coordinate} tracksViewChanges={false}>
+            <VenueMarker size={36} />
+          </Marker>
+        </MapView>
+      )}
     </View>
   );
 }
